@@ -14,7 +14,110 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      learning_resources: {
+        Row: {
+          added_at: string
+          completed: boolean
+          completed_at: string | null
+          difficulty: string
+          id: string
+          sort_order: number
+          title: string
+          type: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          completed?: boolean
+          completed_at?: string | null
+          difficulty: string
+          id?: string
+          sort_order?: number
+          title: string
+          type: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          completed?: boolean
+          completed_at?: string | null
+          difficulty?: string
+          id?: string
+          sort_order?: number
+          title?: string
+          type?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          learning_goal: string
+          study_time_minutes: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          learning_goal?: string
+          study_time_minutes?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          learning_goal?: string
+          study_time_minutes?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      study_sessions: {
+        Row: {
+          created_at: string
+          duration_minutes: number
+          id: string
+          resource_id: string | null
+          session_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes: number
+          id?: string
+          resource_id?: string | null
+          session_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          resource_id?: string | null
+          session_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_sessions_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "learning_resources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

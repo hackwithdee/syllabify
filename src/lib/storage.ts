@@ -1,84 +1,7 @@
-import { User, Resource, StudySession } from './types';
+import { supabase } from '@/integrations/supabase/client';
+import type { LearningResource, StudySession } from './types';
 
-const KEYS = {
-  currentUser: 'syllabify_current_user',
-  users: 'syllabify_users',
-  resources: 'syllabify_resources',
-  sessions: 'syllabify_sessions',
-};
-
-function get<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function set(key: string, value: unknown) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
-// Auth
-export function getCurrentUser(): User | null {
-  return get<User | null>(KEYS.currentUser, null);
-}
-
-export function setCurrentUser(user: User | null) {
-  set(KEYS.currentUser, user);
-}
-
-export function getUsers(): User[] {
-  return get<User[]>(KEYS.users, []);
-}
-
-export function signUp(name: string, email: string, password: string): User {
-  const users = getUsers();
-  if (users.find(u => u.email === email)) throw new Error('Email already registered');
-  const user: User = {
-    id: crypto.randomUUID(),
-    name,
-    email,
-    learningGoal: '',
-    studyTimeMinutes: 30,
-    createdAt: new Date().toISOString(),
-  };
-  // Store password hash (simple for MVP)
-  set(KEYS.users, [...users, { ...user, password }]);
-  setCurrentUser(user);
-  return user;
-}
-
-export function signIn(email: string, password: string): User {
-  const users = get<(User & { password: string })[]>(KEYS.users, []);
-  const found = users.find(u => u.email === email && u.password === password);
-  if (!found) throw new Error('Invalid email or password');
-  const { password: _, ...user } = found;
-  setCurrentUser(user);
-  return user;
-}
-
-export function signOut() {
-  setCurrentUser(null);
-}
-
-export function updateUser(updates: Partial<User>): User {
-  const current = getCurrentUser();
-  if (!current) throw new Error('Not logged in');
-  const updated = { ...current, ...updates };
-  setCurrentUser(updated);
-  const users = get<(User & { password: string })[]>(KEYS.users, []);
-  set(KEYS.users, users.map(u => u.id === updated.id ? { ...u, ...updates } : u));
-  return updated;
-}
-
-// Resources
-export function getResources(userId: string): Resource[] {
-  return get<Resource[]>(KEYS.resources, []).filter(r => r.userId === userId).sort((a, b) => a.order - b.order);
-}
-
-export function assignDifficulty(type: Resource['type'], url: string): Resource['difficulty'] {
+export function assignDifficulty(type: LearningResource['type'], url: string): LearningResource['difficulty'] {
   const lower = url.toLowerCase();
   if (type === 'course' || type === 'book') return 'Advanced';
   if (type === 'tutorial' || type === 'video') {
@@ -94,63 +17,86 @@ export function assignDifficulty(type: Resource['type'], url: string): Resource[
   return 'Beginner';
 }
 
-export function addResource(userId: string, title: string, url: string, type: Resource['type']): Resource {
-  const all = get<Resource[]>(KEYS.resources, []);
-  const userResources = all.filter(r => r.userId === userId);
-  const resource: Resource = {
-    id: crypto.randomUUID(),
-    userId,
-    title,
-    url,
-    type,
-    difficulty: assignDifficulty(type, url),
-    completed: false,
-    order: userResources.length,
-    addedAt: new Date().toISOString(),
-  };
-  set(KEYS.resources, [...all, resource]);
-  return resource;
+// Resources
+export async function getResources(userId: string): Promise<LearningResource[]> {
+  const { data, error } = await supabase
+    .from('learning_resources')
+    .select('*')
+    .eq('user_id', userId)
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as LearningResource[];
 }
 
-export function toggleResourceComplete(resourceId: string): Resource {
-  const all = get<Resource[]>(KEYS.resources, []);
-  const idx = all.findIndex(r => r.id === resourceId);
-  if (idx === -1) throw new Error('Resource not found');
-  all[idx] = {
-    ...all[idx],
-    completed: !all[idx].completed,
-    completedAt: !all[idx].completed ? new Date().toISOString() : undefined,
-  };
-  set(KEYS.resources, all);
-  return all[idx];
+export async function addResource(userId: string, title: string, url: string, type: LearningResource['type']): Promise<LearningResource> {
+  const { count } = await supabase
+    .from('learning_resources')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  const { data, error } = await supabase
+    .from('learning_resources')
+    .insert({
+      user_id: userId,
+      title,
+      url,
+      type,
+      difficulty: assignDifficulty(type, url),
+      sort_order: count ?? 0,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as LearningResource;
 }
 
-export function deleteResource(resourceId: string) {
-  const all = get<Resource[]>(KEYS.resources, []);
-  set(KEYS.resources, all.filter(r => r.id !== resourceId));
+export async function toggleResourceComplete(resourceId: string, currentCompleted: boolean) {
+  const { data, error } = await supabase
+    .from('learning_resources')
+    .update({
+      completed: !currentCompleted,
+      completed_at: !currentCompleted ? new Date().toISOString() : null,
+    })
+    .eq('id', resourceId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as LearningResource;
 }
 
-// Sessions & Streaks
-export function getSessions(userId: string): StudySession[] {
-  return get<StudySession[]>(KEYS.sessions, []).filter(s => s.userId === userId);
+export async function deleteResource(resourceId: string) {
+  const { error } = await supabase.from('learning_resources').delete().eq('id', resourceId);
+  if (error) throw error;
 }
 
-export function logSession(userId: string, durationMinutes: number, resourceId?: string): StudySession {
-  const all = get<StudySession[]>(KEYS.sessions, []);
-  const session: StudySession = {
-    id: crypto.randomUUID(),
-    userId,
-    date: new Date().toISOString().split('T')[0],
-    durationMinutes,
-    resourceId,
-  };
-  set(KEYS.sessions, [...all, session]);
-  return session;
+// Sessions
+export async function getSessions(userId: string): Promise<StudySession[]> {
+  const { data, error } = await supabase
+    .from('study_sessions')
+    .select('*')
+    .eq('user_id', userId)
+    .order('session_date', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as StudySession[];
 }
 
-export function getStreak(userId: string): number {
-  const sessions = getSessions(userId);
-  const dates = [...new Set(sessions.map(s => s.date))].sort().reverse();
+export async function logSession(userId: string, durationMinutes: number, resourceId?: string): Promise<StudySession> {
+  const { data, error } = await supabase
+    .from('study_sessions')
+    .insert({
+      user_id: userId,
+      duration_minutes: durationMinutes,
+      resource_id: resourceId || null,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as StudySession;
+}
+
+// Computed
+export function getStreak(sessions: StudySession[]): number {
+  const dates = [...new Set(sessions.map(s => s.session_date))].sort().reverse();
   if (dates.length === 0) return 0;
   
   const today = new Date().toISOString().split('T')[0];
@@ -170,8 +116,7 @@ export function getStreak(userId: string): number {
   return streak;
 }
 
-export function getProgress(userId: string): number {
-  const resources = getResources(userId);
+export function getProgress(resources: LearningResource[]): number {
   if (resources.length === 0) return 0;
   return Math.round((resources.filter(r => r.completed).length / resources.length) * 100);
 }

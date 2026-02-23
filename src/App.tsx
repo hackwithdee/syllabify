@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,39 +16,36 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const { user, login, register, logout, update } = useAuth();
-  const [authError, setAuthError] = useState('');
-  // Force re-render when data changes
-  const [, setTick] = useState(0);
-  const refresh = () => setTick(t => t + 1);
+  const { user, profile, loading, login, register, logout, updateProfile } = useAuth();
 
-  const handleAuth = (action: 'login' | 'register', data: { name?: string; email: string; password: string }) => {
-    try {
-      setAuthError('');
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user || !profile) {
+    return <AuthPage onAuth={async (action, data) => {
       if (action === 'login') {
-        login(data.email, data.password);
+        await login(data.email, data.password);
       } else {
-        register(data.name || '', data.email, data.password);
+        await register(data.name || '', data.email, data.password);
       }
-    } catch (err: any) {
-      setAuthError(err.message);
-    }
-  };
-
-  if (!user) {
-    return <AuthPage onAuth={handleAuth} error={authError} />;
+    }} />;
   }
 
   return (
     <BrowserRouter>
-      <AppLayout onLogout={logout} userName={user.name}>
+      <AppLayout onLogout={logout} userName={profile.full_name || user.email || ''}>
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard user={user} />} />
-          <Route path="/learning-path" element={<LearningPath user={user} />} />
-          <Route path="/resources" element={<ResourceLibrary user={user} />} />
-          <Route path="/planner" element={<StudyPlanner user={user} />} />
-          <Route path="/profile" element={<UserProfile user={user} onUpdate={(u) => { update(u); refresh(); }} />} />
+          <Route path="/dashboard" element={<Dashboard userId={user.id} profile={profile} />} />
+          <Route path="/learning-path" element={<LearningPath userId={user.id} />} />
+          <Route path="/resources" element={<ResourceLibrary userId={user.id} />} />
+          <Route path="/planner" element={<StudyPlanner userId={user.id} studyTimeMinutes={profile.study_time_minutes} />} />
+          <Route path="/profile" element={<UserProfile profile={profile} email={user.email || ''} onUpdate={updateProfile} />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AppLayout>

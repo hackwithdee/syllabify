@@ -1,25 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { User, Resource, ResourceType } from '@/lib/types';
+import { LearningResource, ResourceType } from '@/lib/types';
 import { getResources, addResource, deleteResource, toggleResourceComplete } from '@/lib/storage';
 import { Plus, Trash2, ExternalLink, CheckCircle2, Circle } from 'lucide-react';
 
 interface ResourceLibraryProps {
-  user: User;
+  userId: string;
 }
 
 const typeLabels: Record<ResourceType, string> = {
-  article: 'Article',
-  video: 'Video',
-  course: 'Course',
-  book: 'Book',
-  podcast: 'Podcast',
-  tutorial: 'Tutorial',
+  article: 'Article', video: 'Video', course: 'Course',
+  book: 'Book', podcast: 'Podcast', tutorial: 'Tutorial',
 };
 
 const difficultyColors: Record<string, string> = {
@@ -28,33 +24,32 @@ const difficultyColors: Record<string, string> = {
   Advanced: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
-const ResourceLibrary = ({ user }: ResourceLibraryProps) => {
-  const [resources, setResources] = useState(() => getResources(user.id));
+const ResourceLibrary = ({ userId }: ResourceLibraryProps) => {
+  const [resources, setResources] = useState<LearningResource[]>([]);
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [type, setType] = useState<ResourceType>('article');
   const [showForm, setShowForm] = useState(false);
 
-  const refresh = () => setResources(getResources(user.id));
+  const refresh = () => getResources(userId).then(setResources);
 
-  const handleAdd = (e: React.FormEvent) => {
+  useEffect(() => { refresh(); }, [userId]);
+
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !url.trim()) return;
-    addResource(user.id, title.trim(), url.trim(), type);
-    setTitle('');
-    setUrl('');
-    setType('article');
-    setShowForm(false);
+    await addResource(userId, title.trim(), url.trim(), type);
+    setTitle(''); setUrl(''); setType('article'); setShowForm(false);
     refresh();
   };
 
-  const handleToggle = (id: string) => {
-    toggleResourceComplete(id);
+  const handleToggle = async (resource: LearningResource) => {
+    await toggleResourceComplete(resource.id, resource.completed);
     refresh();
   };
 
-  const handleDelete = (id: string) => {
-    deleteResource(id);
+  const handleDelete = async (id: string) => {
+    await deleteResource(id);
     refresh();
   };
 
@@ -69,9 +64,7 @@ const ResourceLibrary = ({ user }: ResourceLibraryProps) => {
 
       {showForm && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-display">Add New Resource</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-lg font-display">Add New Resource</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleAdd} className="space-y-4">
               <div className="space-y-2">
@@ -113,20 +106,14 @@ const ResourceLibrary = ({ user }: ResourceLibraryProps) => {
           {resources.map(resource => (
             <Card key={resource.id} className={resource.completed ? 'opacity-70' : ''}>
               <CardContent className="py-4 flex items-center gap-3">
-                <button onClick={() => handleToggle(resource.id)} className="shrink-0">
-                  {resource.completed ? (
-                    <CheckCircle2 className="h-5 w-5 text-success" />
-                  ) : (
-                    <Circle className="h-5 w-5 text-muted-foreground" />
-                  )}
+                <button onClick={() => handleToggle(resource)} className="shrink-0">
+                  {resource.completed ? <CheckCircle2 className="h-5 w-5 text-success" /> : <Circle className="h-5 w-5 text-muted-foreground" />}
                 </button>
                 <div className="flex-1 min-w-0">
                   <p className={`font-medium truncate ${resource.completed ? 'line-through' : ''}`}>{resource.title}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <Badge variant="outline" className="text-xs">{typeLabels[resource.type]}</Badge>
-                    <Badge variant="outline" className={`text-xs ${difficultyColors[resource.difficulty]}`}>
-                      {resource.difficulty}
-                    </Badge>
+                    <Badge variant="outline" className={`text-xs ${difficultyColors[resource.difficulty]}`}>{resource.difficulty}</Badge>
                   </div>
                 </div>
                 <a href={resource.url} target="_blank" rel="noopener noreferrer" className="shrink-0 text-muted-foreground hover:text-primary">

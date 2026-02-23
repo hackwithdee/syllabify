@@ -1,32 +1,34 @@
-export interface User {
+export interface Profile {
   id: string;
-  name: string;
-  email: string;
-  learningGoal: string;
-  studyTimeMinutes: number;
-  createdAt: string;
+  user_id: string;
+  full_name: string;
+  learning_goal: string;
+  study_time_minutes: number;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface Resource {
+export interface LearningResource {
   id: string;
-  userId: string;
+  user_id: string;
   title: string;
   url: string;
   type: 'article' | 'video' | 'course' | 'book' | 'podcast' | 'tutorial';
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   completed: boolean;
-  order: number;
-  addedAt: string;
-  completedAt?: string;
+  sort_order: number;
+  added_at: string;
+  completed_at?: string | null;
 }
 
 export interface StudySession {
   id: string;
-  userId: string;
-  date: string;
-  durationMinutes: number;
-  resourceId?: string;
+  user_id: string;
+  session_date: string;
+  duration_minutes: number;
+  resource_id?: string | null;
+  created_at: string;
 }
 
-export type ResourceType = Resource['type'];
-export type Difficulty = Resource['difficulty'];
+export type ResourceType = LearningResource['type'];
+export type Difficulty = LearningResource['difficulty'];
