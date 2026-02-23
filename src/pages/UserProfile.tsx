@@ -3,25 +3,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User } from '@/lib/types';
+import { Profile } from '@/lib/types';
 
 interface UserProfileProps {
-  user: User;
-  onUpdate: (updates: Partial<User>) => void;
+  profile: Profile;
+  email: string;
+  onUpdate: (updates: Partial<Profile>) => Promise<Profile>;
 }
 
-const UserProfile = ({ user, onUpdate }: UserProfileProps) => {
-  const [name, setName] = useState(user.name);
-  const [goal, setGoal] = useState(user.learningGoal);
-  const [studyTime, setStudyTime] = useState(user.studyTimeMinutes.toString());
+const UserProfile = ({ profile, email, onUpdate }: UserProfileProps) => {
+  const [name, setName] = useState(profile.full_name);
+  const [goal, setGoal] = useState(profile.learning_goal);
+  const [studyTime, setStudyTime] = useState(profile.study_time_minutes.toString());
   const [saved, setSaved] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdate({
-      name: name.trim(),
-      learningGoal: goal.trim(),
-      studyTimeMinutes: parseInt(studyTime) || 30,
+    await onUpdate({
+      full_name: name.trim(),
+      learning_goal: goal.trim(),
+      study_time_minutes: parseInt(studyTime) || 30,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -32,9 +33,7 @@ const UserProfile = ({ user, onUpdate }: UserProfileProps) => {
       <h1 className="text-2xl font-bold font-display">Profile</h1>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-display">Your Settings</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-lg font-display">Your Settings</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-2">
@@ -56,11 +55,9 @@ const UserProfile = ({ user, onUpdate }: UserProfileProps) => {
 
       <Card>
         <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">
-            <strong>Email:</strong> {user.email}
-          </p>
+          <p className="text-sm text-muted-foreground"><strong>Email:</strong> {email}</p>
           <p className="text-sm text-muted-foreground mt-1">
-            <strong>Joined:</strong> {new Date(user.createdAt).toLocaleDateString()}
+            <strong>Joined:</strong> {new Date(profile.created_at).toLocaleDateString()}
           </p>
         </CardContent>
       </Card>

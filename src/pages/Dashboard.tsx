@@ -1,28 +1,36 @@
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { User } from '@/lib/types';
-import { getResources, getProgress, getStreak, getSessions } from '@/lib/storage';
+import { Profile, LearningResource, StudySession } from '@/lib/types';
+import { getResources, getSessions, getProgress, getStreak } from '@/lib/storage';
 import { Flame, Target, BookOpen, CheckCircle2 } from 'lucide-react';
 
 interface DashboardProps {
-  user: User;
+  userId: string;
+  profile: Profile;
 }
 
-const Dashboard = ({ user }: DashboardProps) => {
-  const resources = getResources(user.id);
-  const progress = getProgress(user.id);
-  const streak = getStreak(user.id);
-  const sessions = getSessions(user.id);
-  const totalMinutes = sessions.reduce((sum, s) => sum + s.durationMinutes, 0);
+const Dashboard = ({ userId, profile }: DashboardProps) => {
+  const [resources, setResources] = useState<LearningResource[]>([]);
+  const [sessions, setSessions] = useState<StudySession[]>([]);
+
+  useEffect(() => {
+    getResources(userId).then(setResources);
+    getSessions(userId).then(setSessions);
+  }, [userId]);
+
+  const progress = getProgress(resources);
+  const streak = getStreak(sessions);
+  const totalMinutes = sessions.reduce((sum, s) => sum + s.duration_minutes, 0);
   const completed = resources.filter(r => r.completed).length;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold font-display">Dashboard</h1>
-        {user.learningGoal && (
+        {profile.learning_goal && (
           <p className="text-muted-foreground mt-1">
-            Goal: <span className="font-medium text-foreground">{user.learningGoal}</span>
+            Goal: <span className="font-medium text-foreground">{profile.learning_goal}</span>
           </p>
         )}
       </div>

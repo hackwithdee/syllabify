@@ -1,30 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { User } from '@/lib/types';
+import { LearningResource } from '@/lib/types';
 import { getResources, toggleResourceComplete } from '@/lib/storage';
 import { CheckCircle2, Circle, ExternalLink, ArrowDown } from 'lucide-react';
 
 interface LearningPathProps {
-  user: User;
+  userId: string;
 }
 
 const difficultyOrder = { Beginner: 0, Intermediate: 1, Advanced: 2 };
-
 const difficultyColors: Record<string, string> = {
   Beginner: 'bg-success/10 text-success border-success/20',
   Intermediate: 'bg-secondary/10 text-secondary border-secondary/20',
   Advanced: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
-const LearningPath = ({ user }: LearningPathProps) => {
-  const [resources, setResources] = useState(() => getResources(user.id));
-  const refresh = () => setResources(getResources(user.id));
+const LearningPath = ({ userId }: LearningPathProps) => {
+  const [resources, setResources] = useState<LearningResource[]>([]);
+  const refresh = () => getResources(userId).then(setResources);
+
+  useEffect(() => { refresh(); }, [userId]);
 
   const sorted = [...resources].sort((a, b) => difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty]);
 
-  const handleToggle = (id: string) => {
-    toggleResourceComplete(id);
+  const handleToggle = async (resource: LearningResource) => {
+    await toggleResourceComplete(resource.id, resource.completed);
     refresh();
   };
 
@@ -59,12 +60,8 @@ const LearningPath = ({ user }: LearningPathProps) => {
                     <div key={resource.id}>
                       <Card className={resource.completed ? 'opacity-70' : ''}>
                         <CardContent className="py-3 flex items-center gap-3">
-                          <button onClick={() => handleToggle(resource.id)} className="shrink-0">
-                            {resource.completed ? (
-                              <CheckCircle2 className="h-5 w-5 text-success" />
-                            ) : (
-                              <Circle className="h-5 w-5 text-muted-foreground" />
-                            )}
+                          <button onClick={() => handleToggle(resource)} className="shrink-0">
+                            {resource.completed ? <CheckCircle2 className="h-5 w-5 text-success" /> : <Circle className="h-5 w-5 text-muted-foreground" />}
                           </button>
                           <div className="flex-1 min-w-0">
                             <p className={`font-medium text-sm ${resource.completed ? 'line-through' : ''}`}>{resource.title}</p>
@@ -75,17 +72,13 @@ const LearningPath = ({ user }: LearningPathProps) => {
                         </CardContent>
                       </Card>
                       {i < items.length - 1 && (
-                        <div className="flex justify-center py-1">
-                          <ArrowDown className="h-3 w-3 text-muted-foreground/50" />
-                        </div>
+                        <div className="flex justify-center py-1"><ArrowDown className="h-3 w-3 text-muted-foreground/50" /></div>
                       )}
                     </div>
                   ))}
                 </div>
                 {gi < groups.length - 1 && sorted.filter(r => r.difficulty === groups[gi + 1]).length > 0 && (
-                  <div className="flex justify-center py-2">
-                    <ArrowDown className="h-4 w-4 text-muted-foreground" />
-                  </div>
+                  <div className="flex justify-center py-2"><ArrowDown className="h-4 w-4 text-muted-foreground" /></div>
                 )}
               </div>
             );

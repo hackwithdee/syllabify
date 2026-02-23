@@ -1,37 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User } from '@/lib/types';
-import { getSessions, logSession, getResources } from '@/lib/storage';
+import { StudySession } from '@/lib/types';
+import { getSessions, logSession } from '@/lib/storage';
 import { Clock, Plus, CalendarDays } from 'lucide-react';
 
 interface StudyPlannerProps {
-  user: User;
+  userId: string;
+  studyTimeMinutes: number;
 }
 
-const StudyPlanner = ({ user }: StudyPlannerProps) => {
-  const [sessions, setSessions] = useState(() => getSessions(user.id));
-  const [duration, setDuration] = useState(user.studyTimeMinutes.toString());
+const StudyPlanner = ({ userId, studyTimeMinutes }: StudyPlannerProps) => {
+  const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [duration, setDuration] = useState(studyTimeMinutes.toString());
   const [showForm, setShowForm] = useState(false);
 
-  const refresh = () => setSessions(getSessions(user.id));
+  const refresh = () => getSessions(userId).then(setSessions);
+  useEffect(() => { refresh(); }, [userId]);
 
-  const handleLog = (e: React.FormEvent) => {
+  const handleLog = async (e: React.FormEvent) => {
     e.preventDefault();
     const mins = parseInt(duration);
     if (isNaN(mins) || mins <= 0) return;
-    logSession(user.id, mins);
+    await logSession(userId, mins);
     setShowForm(false);
     refresh();
   };
 
   const today = new Date().toISOString().split('T')[0];
-  const todayMinutes = sessions.filter(s => s.date === today).reduce((sum, s) => sum + s.durationMinutes, 0);
-  const goalPercent = Math.min(100, Math.round((todayMinutes / user.studyTimeMinutes) * 100));
+  const todayMinutes = sessions.filter(s => s.session_date === today).reduce((sum, s) => sum + s.duration_minutes, 0);
+  const goalPercent = Math.min(100, Math.round((todayMinutes / studyTimeMinutes) * 100));
 
-  const recentDates = [...new Set(sessions.map(s => s.date))].sort().reverse().slice(0, 7);
+  const recentDates = [...new Set(sessions.map(s => s.session_date))].sort().reverse().slice(0, 7);
 
   return (
     <div className="space-y-6">
@@ -43,9 +45,7 @@ const StudyPlanner = ({ user }: StudyPlannerProps) => {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-display">Today's Goal</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-lg font-display">Today's Goal</CardTitle></CardHeader>
         <CardContent>
           <div className="flex items-center gap-4">
             <div className="relative h-20 w-20">
@@ -56,9 +56,9 @@ const StudyPlanner = ({ user }: StudyPlannerProps) => {
               <span className="absolute inset-0 flex items-center justify-center text-sm font-bold">{goalPercent}%</span>
             </div>
             <div>
-              <p className="font-medium">{todayMinutes} / {user.studyTimeMinutes} min</p>
+              <p className="font-medium">{todayMinutes} / {studyTimeMinutes} min</p>
               <p className="text-sm text-muted-foreground">
-                {goalPercent >= 100 ? '🎉 Goal reached!' : `${user.studyTimeMinutes - todayMinutes} min remaining`}
+                {goalPercent >= 100 ? '🎉 Goal reached!' : `${studyTimeMinutes - todayMinutes} min remaining`}
               </p>
             </div>
           </div>
@@ -80,17 +80,15 @@ const StudyPlanner = ({ user }: StudyPlannerProps) => {
       )}
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-display">Recent Activity</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-lg font-display">Recent Activity</CardTitle></CardHeader>
         <CardContent>
           {recentDates.length === 0 ? (
             <p className="text-sm text-muted-foreground">No study sessions logged yet.</p>
           ) : (
             <div className="space-y-2">
               {recentDates.map(date => {
-                const daySessions = sessions.filter(s => s.date === date);
-                const totalMins = daySessions.reduce((sum, s) => sum + s.durationMinutes, 0);
+                const daySessions = sessions.filter(s => s.session_date === date);
+                const totalMins = daySessions.reduce((sum, s) => sum + s.duration_minutes, 0);
                 return (
                   <div key={date} className="flex items-center justify-between py-2 border-b last:border-b-0">
                     <div className="flex items-center gap-2">
