@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Profile } from '@/lib/types';
+import { User, Mail, Calendar } from 'lucide-react';
 
 interface UserProfileProps {
   profile: Profile;
@@ -29,36 +30,48 @@ const UserProfile = ({ profile, email, onUpdate }: UserProfileProps) => {
   };
 
   return (
-    <div className="space-y-6 max-w-lg">
-      <h1 className="text-2xl font-bold font-display">Profile</h1>
+    <div className="space-y-6 max-w-lg mx-auto">
+      <div className="text-center">
+        <div className="h-20 w-20 rounded-full gradient-primary flex items-center justify-center text-3xl font-bold text-primary-foreground mx-auto mb-3">
+          {(profile.full_name || '?')[0].toUpperCase()}
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold font-display">{profile.full_name || 'Your Profile'}</h1>
+        <p className="text-muted-foreground mt-1">{email}</p>
+      </div>
 
-      <Card>
-        <CardHeader><CardTitle className="text-lg font-display">Your Settings</CardTitle></CardHeader>
+      <Card className="border-0 shadow-md">
+        <CardHeader><CardTitle className="text-lg font-display">Settings</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-2">
               <Label>Name</Label>
-              <Input value={name} onChange={e => setName(e.target.value)} required />
+              <Input value={name} onChange={e => setName(e.target.value)} required className="h-11" />
             </div>
             <div className="space-y-2">
               <Label>Learning Goal</Label>
-              <Input value={goal} onChange={e => setGoal(e.target.value)} placeholder="e.g., Master React in 3 months" />
+              <Input value={goal} onChange={e => setGoal(e.target.value)} placeholder="e.g., Master React in 3 months" className="h-11" />
             </div>
             <div className="space-y-2">
               <Label>Daily Study Time (minutes)</Label>
-              <Input type="number" value={studyTime} onChange={e => setStudyTime(e.target.value)} min="5" />
+              <Input type="number" value={studyTime} onChange={e => setStudyTime(e.target.value)} min="5" className="h-11" />
             </div>
-            <Button type="submit">{saved ? '✓ Saved!' : 'Save Changes'}</Button>
+            <Button type="submit" className={saved ? 'bg-success border-0' : 'gradient-primary border-0'} disabled={saved}>
+              {saved ? '✓ Saved!' : 'Save Changes'}
+            </Button>
           </form>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground"><strong>Email:</strong> {email}</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            <strong>Joined:</strong> {new Date(profile.created_at).toLocaleDateString()}
-          </p>
+      <Card className="border-0 shadow-md">
+        <CardContent className="pt-6 space-y-3">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Mail className="h-4 w-4" />
+            <span>{email}</span>
+          </div>
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Calendar className="h-4 w-4" />
+            <span>Joined {new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+          </div>
         </CardContent>
       </Card>
     </div>
