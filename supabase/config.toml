@@ -1,1 +1,4 @@
 project_id = "plingciuykuldestahvd"
+
+[functions.suggest-resources]
+verify_jwt = false

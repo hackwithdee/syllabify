@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Eye, EyeOff } from 'lucide-react';
 
 interface AuthPageProps {
   onAuth: (action: 'login' | 'register', data: { name?: string; email: string; password: string }) => Promise<void>;
@@ -14,6 +14,7 @@ const AuthPage = ({ onAuth }: AuthPageProps) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState('');
@@ -38,24 +39,28 @@ const AuthPage = ({ onAuth }: AuthPageProps) => {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-2">
-            <BookOpen className="h-8 w-8 text-primary" />
+          <div className="inline-flex items-center gap-2.5 mb-3">
+            <div className="p-2 rounded-xl gradient-primary">
+              <BookOpen className="h-7 w-7 text-primary-foreground" />
+            </div>
             <h1 className="text-3xl font-bold font-display text-foreground">Syllabify</h1>
           </div>
-          <p className="text-muted-foreground">Organize your learning journey</p>
+          <p className="text-muted-foreground text-lg">Organize your learning journey</p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-display">{isLogin ? 'Welcome back' : 'Create account'}</CardTitle>
-            <CardDescription>
+        <Card className="shadow-lg border-0 bg-card">
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="font-display text-2xl">{isLogin ? 'Welcome back' : 'Create account'}</CardTitle>
+            <CardDescription className="text-base">
               {isLogin ? 'Sign in to continue learning' : 'Start your learning journey today'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {confirmMessage ? (
               <div className="text-center space-y-4">
-                <p className="text-sm text-success font-medium">{confirmMessage}</p>
+                <div className="p-4 rounded-xl bg-success/10 border border-success/20">
+                  <p className="text-sm text-success font-medium">{confirmMessage}</p>
+                </div>
                 <Button variant="outline" onClick={() => { setConfirmMessage(''); setIsLogin(true); }}>
                   Go to Sign In
                 </Button>
@@ -66,25 +71,48 @@ const AuthPage = ({ onAuth }: AuthPageProps) => {
                   {!isLogin && (
                     <div className="space-y-2">
                       <Label htmlFor="name">Name</Label>
-                      <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" required />
+                      <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" required className="h-11" />
                     </div>
                   )}
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
+                    <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required className="h-11" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        minLength={6}
+                        className="h-11 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
-                  {error && <p className="text-sm text-destructive">{error}</p>}
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  {error && (
+                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                      <p className="text-sm text-destructive">{error}</p>
+                    </div>
+                  )}
+                  <Button type="submit" className="w-full h-11 text-base font-semibold gradient-primary border-0" disabled={loading}>
                     {loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Sign Up'}
                   </Button>
                 </form>
-                <p className="text-center text-sm text-muted-foreground mt-4">
+                <p className="text-center text-sm text-muted-foreground mt-5">
                   {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
-                  <button onClick={() => { setIsLogin(!isLogin); setError(''); }} className="text-primary hover:underline font-medium">
+                  <button onClick={() => { setIsLogin(!isLogin); setError(''); }} className="text-primary hover:underline font-semibold">
                     {isLogin ? 'Sign up' : 'Sign in'}
                   </button>
                 </p>

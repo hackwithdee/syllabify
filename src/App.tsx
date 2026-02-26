@@ -10,6 +10,7 @@ import LearningPath from './pages/LearningPath';
 import ResourceLibrary from './pages/ResourceLibrary';
 import StudyPlanner from './pages/StudyPlanner';
 import UserProfile from './pages/UserProfile';
+import ExplorePage from './pages/ExplorePage';
 import AppLayout from './components/AppLayout';
 import NotFound from "./pages/NotFound";
 
@@ -21,7 +22,10 @@ const AppContent = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 rounded-xl gradient-primary animate-pulse" />
+          <p className="text-muted-foreground font-medium">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -43,6 +47,7 @@ const AppContent = () => {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard userId={user.id} profile={profile} />} />
           <Route path="/learning-path" element={<LearningPath userId={user.id} />} />
+          <Route path="/explore" element={<ExplorePage userId={user.id} learningGoal={profile.learning_goal} />} />
           <Route path="/resources" element={<ResourceLibrary userId={user.id} />} />
           <Route path="/planner" element={<StudyPlanner userId={user.id} studyTimeMinutes={profile.study_time_minutes} />} />
           <Route path="/profile" element={<UserProfile profile={profile} email={user.email || ''} onUpdate={updateProfile} />} />

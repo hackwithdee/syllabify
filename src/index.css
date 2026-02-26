@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
+    --background: 48 30% 96%;
     --foreground: 230 25% 12%;
 
     --card: 0 0% 100%;
@@ -15,58 +15,65 @@
     --popover: 0 0% 100%;
     --popover-foreground: 230 25% 12%;
 
-    --primary: 245 58% 51%;
+    --primary: 262 60% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 35 95% 55%;
+    --secondary: 25 95% 55%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 15% 92%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 40 20% 92%;
+    --muted-foreground: 220 10% 42%;
 
-    --accent: 175 60% 40%;
+    --accent: 175 65% 38%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 88%;
-    --input: 220 15% 88%;
-    --ring: 245 58% 51%;
+    --border: 40 15% 86%;
+    --input: 40 15% 86%;
+    --ring: 262 60% 50%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    --sidebar-background: 245 58% 51%;
+    --sidebar-background: 262 60% 50%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 35 95% 55%;
+    --sidebar-primary: 25 95% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 245 50% 60%;
+    --sidebar-accent: 262 50% 60%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 245 40% 45%;
-    --sidebar-ring: 35 95% 55%;
+    --sidebar-border: 262 40% 45%;
+    --sidebar-ring: 25 95% 55%;
 
-    --success: 152 60% 40%;
+    --success: 152 70% 38%;
     --success-foreground: 0 0% 100%;
+
+    --warning: 45 95% 50%;
+    --warning-foreground: 30 60% 16%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(262 60% 50%), hsl(300 55% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(25 95% 55%), hsl(45 95% 55%));
+    --gradient-accent: linear-gradient(135deg, hsl(175 65% 38%), hsl(195 65% 45%));
   }
 
   .dark {
-    --background: 230 25% 8%;
-    --foreground: 220 20% 95%;
+    --background: 260 20% 8%;
+    --foreground: 48 30% 95%;
 
-    --card: 230 20% 12%;
-    --card-foreground: 220 20% 95%;
+    --card: 260 18% 12%;
+    --card-foreground: 48 30% 95%;
 
-    --popover: 230 20% 12%;
-    --popover-foreground: 220 20% 95%;
+    --popover: 260 18% 12%;
+    --popover-foreground: 48 30% 95%;
 
-    --primary: 245 58% 61%;
+    --primary: 262 60% 62%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 35 95% 55%;
+    --secondary: 25 95% 58%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 230 15% 18%;
-    --muted-foreground: 220 10% 60%;
+    --muted: 260 15% 18%;
+    --muted-foreground: 40 10% 60%;
 
     --accent: 175 60% 45%;
     --accent-foreground: 0 0% 100%;
@@ -74,21 +81,24 @@
     --destructive: 0 62% 40%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 230 15% 20%;
-    --input: 230 15% 20%;
-    --ring: 245 58% 61%;
+    --border: 260 15% 20%;
+    --input: 260 15% 20%;
+    --ring: 262 60% 62%;
 
-    --sidebar-background: 230 25% 10%;
-    --sidebar-foreground: 220 20% 95%;
-    --sidebar-primary: 35 95% 55%;
+    --sidebar-background: 260 20% 10%;
+    --sidebar-foreground: 48 30% 95%;
+    --sidebar-primary: 25 95% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 230 20% 16%;
-    --sidebar-accent-foreground: 220 20% 95%;
-    --sidebar-border: 230 15% 20%;
-    --sidebar-ring: 35 95% 55%;
+    --sidebar-accent: 260 18% 16%;
+    --sidebar-accent-foreground: 48 30% 95%;
+    --sidebar-border: 260 15% 20%;
+    --sidebar-ring: 25 95% 58%;
 
     --success: 152 60% 45%;
     --success-foreground: 0 0% 100%;
+
+    --warning: 45 95% 55%;
+    --warning-foreground: 30 60% 16%;
   }
 }
 
@@ -98,11 +108,23 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-sans antialiased;
     font-family: 'DM Sans', sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Space Grotesk', sans-serif;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+  .gradient-accent {
+    background: var(--gradient-accent);
   }
 }

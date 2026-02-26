@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Profile, LearningResource, StudySession } from '@/lib/types';
 import { getResources, getSessions, getProgress, getStreak } from '@/lib/storage';
-import { Flame, Target, BookOpen, CheckCircle2 } from 'lucide-react';
+import { getDailyQuote } from '@/lib/quotes';
+import { Flame, Target, BookOpen, CheckCircle2, Quote } from 'lucide-react';
 
 interface DashboardProps {
   userId: string;
@@ -23,74 +24,58 @@ const Dashboard = ({ userId, profile }: DashboardProps) => {
   const streak = getStreak(sessions);
   const totalMinutes = sessions.reduce((sum, s) => sum + s.duration_minutes, 0);
   const completed = resources.filter(r => r.completed).length;
+  const quote = getDailyQuote();
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold font-display">Dashboard</h1>
+        <h1 className="text-3xl font-bold font-display">
+          Welcome back{profile.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''} 👋
+        </h1>
         {profile.learning_goal && (
-          <p className="text-muted-foreground mt-1">
-            Goal: <span className="font-medium text-foreground">{profile.learning_goal}</span>
+          <p className="text-muted-foreground mt-1 text-lg">
+            🎯 <span className="font-medium text-foreground">{profile.learning_goal}</span>
           </p>
         )}
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Target className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold font-display">{progress}%</p>
-                <p className="text-xs text-muted-foreground">Progress</p>
-              </div>
+      {/* Motivational Quote */}
+      <Card className="border-0 gradient-primary text-primary-foreground overflow-hidden relative">
+        <CardContent className="py-6">
+          <div className="flex gap-3 items-start">
+            <Quote className="h-8 w-8 shrink-0 opacity-60" />
+            <div>
+              <p className="text-lg font-medium italic leading-relaxed">"{quote.text}"</p>
+              <p className="text-sm mt-2 opacity-80">— {quote.author}</p>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-secondary/10">
-                <Flame className="h-5 w-5 text-secondary" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {[
+          { icon: Target, value: `${progress}%`, label: 'Progress', gradient: 'gradient-primary' },
+          { icon: Flame, value: streak, label: 'Day streak', gradient: 'gradient-secondary' },
+          { icon: BookOpen, value: resources.length, label: 'Resources', gradient: 'gradient-accent' },
+          { icon: CheckCircle2, value: completed, label: 'Completed', color: 'bg-success' },
+        ].map((stat, i) => (
+          <Card key={i} className="overflow-hidden border-0 shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl ${stat.gradient || stat.color}`}>
+                  <stat.icon className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold font-display">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold font-display">{streak}</p>
-                <p className="text-xs text-muted-foreground">Day streak</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-accent/10">
-                <BookOpen className="h-5 w-5 text-accent" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold font-display">{resources.length}</p>
-                <p className="text-xs text-muted-foreground">Resources</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/10">
-                <CheckCircle2 className="h-5 w-5 text-success" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold font-display">{completed}</p>
-                <p className="text-xs text-muted-foreground">Completed</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <Card>
+      <Card className="border-0 shadow-md">
         <CardHeader>
           <CardTitle className="text-lg font-display">Overall Progress</CardTitle>
         </CardHeader>
@@ -103,11 +88,13 @@ const Dashboard = ({ userId, profile }: DashboardProps) => {
       </Card>
 
       {resources.length === 0 && (
-        <Card className="border-dashed">
-          <CardContent className="pt-6 text-center">
-            <BookOpen className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-            <p className="font-medium">No resources yet</p>
-            <p className="text-sm text-muted-foreground">Head to the Resources page to add your first learning material.</p>
+        <Card className="border-dashed border-2">
+          <CardContent className="pt-8 pb-8 text-center">
+            <div className="p-3 rounded-2xl gradient-secondary inline-flex mb-4">
+              <BookOpen className="h-8 w-8 text-secondary-foreground" />
+            </div>
+            <p className="font-semibold text-lg">No resources yet</p>
+            <p className="text-sm text-muted-foreground mt-1">Head to the Resources page or Explore to add your first learning material.</p>
           </CardContent>
         </Card>
       )}
