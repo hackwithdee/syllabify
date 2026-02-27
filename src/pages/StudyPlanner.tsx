@@ -3,10 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { StudySession, LearningResource } from '@/lib/types';
+import { LearningResource } from '@/lib/types';
 import { getSessions, logSession, getResources } from '@/lib/storage';
-import { Plus, CalendarDays, Bell, BookOpen } from 'lucide-react';
+import { useStudyTimer } from '@/hooks/useStudyTimer';
+import { Plus, CalendarDays, Bell, BookOpen, Play, Pause, Square, Timer } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 interface StudyPlannerProps {
   userId: string;
@@ -14,20 +16,31 @@ interface StudyPlannerProps {
 }
 
 const StudyPlanner = ({ userId, studyTimeMinutes }: StudyPlannerProps) => {
-  const [sessions, setSessions] = useState<StudySession[]>([]);
+  const { toast } = useToast();
+  const timer = useStudyTimer();
   const [resources, setResources] = useState<LearningResource[]>([]);
+  const [timerResource, setTimerResource] = useState<string>('');
   const [duration, setDuration] = useState(studyTimeMinutes.toString());
   const [selectedResource, setSelectedResource] = useState<string>('');
   const [scheduledDate, setScheduledDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [scheduledTime, setScheduledTime] = useState('09:00');
   const [showForm, setShowForm] = useState(false);
-  const [reminderSet, setReminderSet] = useState(false);
+  const [sessions, setSessions] = useState<any[]>([]);
 
   const refresh = () => {
-    getSessions(userId).then(setSessions);
     getResources(userId).then(setResources);
+    getSessions(userId).then(setSessions);
   };
   useEffect(() => { refresh(); }, [userId]);
+
+  const handleStopTimer = async () => {
+    const mins = timer.stop();
+    if (mins > 0) {
+      await logSession(userId, mins, timerResource || undefined);
+      toast({ title: 'Session logged!', description: `${mins} minute${mins > 1 ? 's' : ''} recorded.` });
+      refresh();
+    }
+  };
 
   const handleSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,19 +48,14 @@ const StudyPlanner = ({ userId, studyTimeMinutes }: StudyPlannerProps) => {
     if (isNaN(mins) || mins <= 0) return;
     await logSession(userId, mins, selectedResource || undefined);
     setShowForm(false);
-    setReminderSet(true);
-    setTimeout(() => setReminderSet(false), 3000);
+    toast({ title: 'Session scheduled!', description: `${mins} min session added.` });
     refresh();
   };
 
   const today = new Date().toISOString().split('T')[0];
-  const todayMinutes = sessions.filter(s => s.session_date === today).reduce((sum, s) => sum + s.duration_minutes, 0);
-  const goalPercent = Math.min(100, Math.round((todayMinutes / studyTimeMinutes) * 100));
-
-  // Group upcoming sessions by date
   const upcomingSessions = sessions
     .filter(s => s.session_date >= today)
-    .sort((a, b) => a.session_date.localeCompare(b.session_date))
+    .sort((a: any, b: any) => a.session_date.localeCompare(b.session_date))
     .slice(0, 5);
 
   const incompleteResources = resources.filter(r => !r.completed);
@@ -57,32 +65,60 @@ const StudyPlanner = ({ userId, studyTimeMinutes }: StudyPlannerProps) => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold font-display">Study Planner</h1>
-          <p className="text-muted-foreground mt-1">Schedule your study sessions</p>
+          <p className="text-muted-foreground mt-1">Track and schedule your study time</p>
         </div>
         <Button onClick={() => setShowForm(!showForm)} className="gradient-primary border-0">
           <Plus className="h-4 w-4 mr-1" /> Schedule
         </Button>
       </div>
 
-      {/* Today's goal */}
-      <Card className="border-0 shadow-md overflow-hidden">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-display">Today's Goal</CardTitle>
-        </CardHeader>
+      {/* Study Timer */}
+      <Card className="border-0 shadow-lg overflow-hidden">
+        <div className="gradient-hero p-1" />
+        <CardHeader><CardTitle className="text-lg font-display flex items-center gap-2"><Timer className="h-5 w-5 text-primary" /> Study Timer</CardTitle></CardHeader>
         <CardContent>
-          <div className="flex items-center gap-5">
-            <div className="relative h-20 w-20 shrink-0">
-              <svg className="h-20 w-20 -rotate-90" viewBox="0 0 36 36">
-                <path d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
-                <path d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831" fill="none" stroke="hsl(var(--primary))" strokeWidth="3" strokeDasharray={`${goalPercent}, 100`} strokeLinecap="round" />
-              </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-sm font-bold font-display">{goalPercent}%</span>
-            </div>
-            <div>
-              <p className="font-semibold text-lg">{todayMinutes} / {studyTimeMinutes} min</p>
-              <p className="text-sm text-muted-foreground">
-                {goalPercent >= 100 ? '🎉 Goal reached!' : `${studyTimeMinutes - todayMinutes} min remaining`}
-              </p>
+          <div className="text-center">
+            <p className={`text-5xl font-bold font-display mb-4 ${timer.isRunning ? 'text-primary animate-pulse-soft' : 'text-foreground'}`}>
+              {timer.display}
+            </p>
+            {incompleteResources.length > 0 && !timer.isRunning && timer.elapsedSeconds === 0 && (
+              <div className="mb-4 max-w-xs mx-auto">
+                <Select value={timerResource} onValueChange={setTimerResource}>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="What are you studying?" /></SelectTrigger>
+                  <SelectContent>
+                    {incompleteResources.map(r => (
+                      <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="flex justify-center gap-3">
+              {!timer.isRunning && timer.elapsedSeconds === 0 && (
+                <Button onClick={timer.start} className="gradient-primary border-0 h-12 px-8 text-base">
+                  <Play className="h-5 w-5 mr-2" /> Start
+                </Button>
+              )}
+              {timer.isRunning && (
+                <>
+                  <Button onClick={timer.pause} variant="outline" className="h-12 px-6">
+                    <Pause className="h-5 w-5 mr-2" /> Pause
+                  </Button>
+                  <Button onClick={handleStopTimer} variant="destructive" className="h-12 px-6">
+                    <Square className="h-5 w-5 mr-2" /> Stop & Log
+                  </Button>
+                </>
+              )}
+              {!timer.isRunning && timer.elapsedSeconds > 0 && (
+                <>
+                  <Button onClick={timer.start} className="gradient-primary border-0 h-12 px-6">
+                    <Play className="h-5 w-5 mr-2" /> Resume
+                  </Button>
+                  <Button onClick={handleStopTimer} variant="destructive" className="h-12 px-6">
+                    <Square className="h-5 w-5 mr-2" /> Stop & Log
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </CardContent>
@@ -112,7 +148,7 @@ const StudyPlanner = ({ userId, studyTimeMinutes }: StudyPlannerProps) => {
                 <div className="space-y-2">
                   <Label>Resource (optional)</Label>
                   <Select value={selectedResource} onValueChange={setSelectedResource}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Select a resource to study" /></SelectTrigger>
+                    <SelectTrigger className="h-11"><SelectValue placeholder="Select a resource" /></SelectTrigger>
                     <SelectContent>
                       {incompleteResources.map(r => (
                         <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>
@@ -123,20 +159,11 @@ const StudyPlanner = ({ userId, studyTimeMinutes }: StudyPlannerProps) => {
               )}
               <div className="flex gap-2">
                 <Button type="submit" className="gradient-primary border-0">
-                  <CalendarDays className="h-4 w-4 mr-1" /> Schedule Session
+                  <CalendarDays className="h-4 w-4 mr-1" /> Schedule
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
-      )}
-
-      {reminderSet && (
-        <Card className="border-0 bg-success/10 border-success/20">
-          <CardContent className="py-4 flex items-center gap-3">
-            <Bell className="h-5 w-5 text-success" />
-            <p className="text-sm font-medium text-success">Session scheduled! 🎉</p>
           </CardContent>
         </Card>
       )}
@@ -150,11 +177,11 @@ const StudyPlanner = ({ userId, studyTimeMinutes }: StudyPlannerProps) => {
           {upcomingSessions.length === 0 ? (
             <div className="text-center py-6">
               <CalendarDays className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">No sessions scheduled. Hit "Schedule" to plan your study time.</p>
+              <p className="text-muted-foreground">No sessions scheduled yet.</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {upcomingSessions.map(session => {
+            <div className="space-y-2">
+              {upcomingSessions.map((session: any) => {
                 const resource = resources.find(r => r.id === session.resource_id);
                 return (
                   <div key={session.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50">

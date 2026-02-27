@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { BookOpen, Eye, EyeOff } from 'lucide-react';
+import { BookOpen, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthPageProps {
   onAuth: (action: 'login' | 'register', data: { name?: string; email: string; password: string }) => Promise<void>;
@@ -11,6 +12,7 @@ interface AuthPageProps {
 
 const AuthPage = ({ onAuth }: AuthPageProps) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [showForgot, setShowForgot] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,6 +37,23 @@ const AuthPage = ({ onAuth }: AuthPageProps) => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setConfirmMessage('Check your email for a password reset link.');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
@@ -45,14 +64,16 @@ const AuthPage = ({ onAuth }: AuthPageProps) => {
             </div>
             <h1 className="text-3xl font-bold font-display text-foreground">Syllabify</h1>
           </div>
-          <p className="text-muted-foreground text-lg">Organize your learning journey</p>
+          <p className="text-muted-foreground text-lg">Your smart learning companion</p>
         </div>
 
         <Card className="shadow-lg border-0 bg-card">
           <CardHeader className="text-center pb-4">
-            <CardTitle className="font-display text-2xl">{isLogin ? 'Welcome back' : 'Create account'}</CardTitle>
+            <CardTitle className="font-display text-2xl">
+              {showForgot ? 'Reset Password' : isLogin ? 'Welcome back' : 'Create account'}
+            </CardTitle>
             <CardDescription className="text-base">
-              {isLogin ? 'Sign in to continue learning' : 'Start your learning journey today'}
+              {showForgot ? 'Enter your email to receive a reset link' : isLogin ? 'Sign in to continue learning' : 'Start your learning journey today'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -61,10 +82,30 @@ const AuthPage = ({ onAuth }: AuthPageProps) => {
                 <div className="p-4 rounded-xl bg-success/10 border border-success/20">
                   <p className="text-sm text-success font-medium">{confirmMessage}</p>
                 </div>
-                <Button variant="outline" onClick={() => { setConfirmMessage(''); setIsLogin(true); }}>
+                <Button variant="outline" onClick={() => { setConfirmMessage(''); setIsLogin(true); setShowForgot(false); }}>
                   Go to Sign In
                 </Button>
               </div>
+            ) : showForgot ? (
+              <>
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Email</Label>
+                    <Input id="reset-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required className="h-11" />
+                  </div>
+                  {error && (
+                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                      <p className="text-sm text-destructive">{error}</p>
+                    </div>
+                  )}
+                  <Button type="submit" className="w-full h-11 text-base font-semibold gradient-primary border-0" disabled={loading}>
+                    {loading ? 'Sending...' : 'Send Reset Link'}
+                  </Button>
+                </form>
+                <button onClick={() => { setShowForgot(false); setError(''); }} className="flex items-center gap-1 text-sm text-primary hover:underline mt-4 mx-auto">
+                  <ArrowLeft className="h-3 w-3" /> Back to login
+                </button>
+              </>
             ) : (
               <>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -79,7 +120,14 @@ const AuthPage = ({ onAuth }: AuthPageProps) => {
                     <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required className="h-11" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">Password</Label>
+                      {isLogin && (
+                        <button type="button" onClick={() => { setShowForgot(true); setError(''); }} className="text-xs text-primary hover:underline">
+                          Forgot password?
+                        </button>
+                      )}
+                    </div>
                     <div className="relative">
                       <Input
                         id="password"

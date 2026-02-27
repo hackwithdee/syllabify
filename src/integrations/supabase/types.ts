@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          read: boolean
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
+      friendships: {
+        Row: {
+          addressee_id: string
+          created_at: string
+          id: string
+          requester_id: string
+          status: string
+        }
+        Insert: {
+          addressee_id: string
+          created_at?: string
+          id?: string
+          requester_id: string
+          status?: string
+        }
+        Update: {
+          addressee_id?: string
+          created_at?: string
+          id?: string
+          requester_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       learning_resources: {
         Row: {
           added_at: string
@@ -53,32 +104,116 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          metadata: Json | null
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          read?: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           full_name: string
           id: string
+          is_student: boolean
           learning_goal: string
+          onboarding_completed: boolean
+          proficiency_level: string
+          student_level: string
           study_time_minutes: number
           updated_at: string
           user_id: string
+          weekly_hours: number
         }
         Insert: {
           created_at?: string
           full_name?: string
           id?: string
+          is_student?: boolean
           learning_goal?: string
+          onboarding_completed?: boolean
+          proficiency_level?: string
+          student_level?: string
           study_time_minutes?: number
           updated_at?: string
           user_id: string
+          weekly_hours?: number
         }
         Update: {
           created_at?: string
           full_name?: string
           id?: string
+          is_student?: boolean
           learning_goal?: string
+          onboarding_completed?: boolean
+          proficiency_level?: string
+          student_level?: string
           study_time_minutes?: number
           updated_at?: string
+          user_id?: string
+          weekly_hours?: number
+        }
+        Relationships: []
+      }
+      roadmap_stages: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          description: string
+          id: string
+          phase: string
+          stage_order: number
+          title: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          phase?: string
+          stage_order?: number
+          title: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          phase?: string
+          stage_order?: number
+          title?: string
           user_id?: string
         }
         Relationships: []

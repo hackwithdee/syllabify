@@ -1,50 +1,116 @@
+import { useState, useEffect } from 'react';
 import { NavLink } from '@/components/NavLink';
-import { BookOpen, LayoutDashboard, Route, Library, CalendarDays, User, LogOut, Sparkles } from 'lucide-react';
+import { BookOpen, LayoutDashboard, Route, Library, CalendarDays, User, LogOut, Sparkles, Map, Users, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { getNotifications, markAllNotificationsRead } from '@/lib/storage';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface AppLayoutProps {
   children: React.ReactNode;
   onLogout: () => void;
   userName: string;
+  userId: string;
 }
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/learning-path', icon: Route, label: 'Learning Path' },
+  { to: '/roadmap', icon: Map, label: 'Roadmap' },
+  { to: '/learning-path', icon: Route, label: 'Path' },
   { to: '/explore', icon: Sparkles, label: 'Explore' },
   { to: '/resources', icon: Library, label: 'Resources' },
   { to: '/planner', icon: CalendarDays, label: 'Planner' },
+  { to: '/friends', icon: Users, label: 'Friends' },
   { to: '/profile', icon: User, label: 'Profile' },
 ];
 
-const AppLayout = ({ children, onLogout, userName }: AppLayoutProps) => {
+// Mobile nav shows a subset
+const mobileNavItems = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Home' },
+  { to: '/roadmap', icon: Map, label: 'Roadmap' },
+  { to: '/explore', icon: Sparkles, label: 'Explore' },
+  { to: '/planner', icon: CalendarDays, label: 'Study' },
+  { to: '/friends', icon: Users, label: 'Friends' },
+];
+
+const AppLayout = ({ children, onLogout, userName, userId }: AppLayoutProps) => {
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotif, setShowNotif] = useState(false);
+
+  useEffect(() => {
+    if (userId) {
+      getNotifications(userId).then(setNotifications).catch(() => {});
+    }
+  }, [userId]);
+
+  const unreadCount = notifications.filter((n: any) => !n.read).length;
+
+  const handleMarkAllRead = async () => {
+    await markAllNotificationsRead(userId);
+    setNotifications(prev => prev.map((n: any) => ({ ...n, read: true })));
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Top nav */}
-      <header className="sticky top-0 z-50 border-b bg-card/90 backdrop-blur-md shadow-sm">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2.5">
+      <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur-md shadow-sm">
+        <div className="container flex h-14 items-center justify-between">
+          <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-xl gradient-primary">
-              <BookOpen className="h-5 w-5 text-primary-foreground" />
+              <BookOpen className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold font-display text-foreground">Syllabify</span>
+            <span className="text-lg font-bold font-display text-foreground">Syllabify</span>
           </div>
           <nav className="hidden lg:flex items-center gap-0.5">
             {navItems.map(item => (
               <NavLink
                 key={item.to}
                 to={item.to}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
-                activeClassName="text-primary bg-primary/10 font-semibold shadow-sm"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
+                activeClassName="text-primary bg-primary/10 font-semibold"
               >
                 <item.icon className="h-4 w-4" />
                 {item.label}
               </NavLink>
             ))}
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {/* Notifications */}
+            <Popover open={showNotif} onOpenChange={setShowNotif}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative text-muted-foreground">
+                  <Bell className="h-4 w-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 p-0">
+                <div className="flex items-center justify-between px-4 py-3 border-b">
+                  <span className="font-display font-bold text-sm">Notifications</span>
+                  {unreadCount > 0 && (
+                    <button onClick={handleMarkAllRead} className="text-xs text-primary hover:underline">Mark all read</button>
+                  )}
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <p className="text-center text-sm text-muted-foreground py-6">No notifications yet</p>
+                  ) : (
+                    notifications.slice(0, 10).map((n: any) => (
+                      <div key={n.id} className={`px-4 py-3 border-b last:border-0 text-sm ${!n.read ? 'bg-primary/5' : ''}`}>
+                        <p className="font-medium">{n.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+
             <div className="hidden sm:flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full gradient-secondary flex items-center justify-center text-sm font-bold text-secondary-foreground">
+              <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center text-xs font-bold text-primary-foreground">
                 {(userName || '?')[0].toUpperCase()}
               </div>
               <span className="text-sm font-medium text-foreground">{userName.split(' ')[0]}</span>
@@ -59,15 +125,15 @@ const AppLayout = ({ children, onLogout, userName }: AppLayoutProps) => {
       {/* Mobile bottom nav */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 backdrop-blur-md shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
         <div className="flex justify-around py-1 px-1">
-          {navItems.map(item => (
+          {mobileNavItems.map(item => (
             <NavLink
               key={item.to}
               to={item.to}
-              className="flex flex-col items-center gap-0.5 px-1.5 py-1.5 text-[10px] text-muted-foreground transition-all duration-200 rounded-lg"
+              className="flex flex-col items-center gap-0.5 px-1 py-1.5 text-[10px] text-muted-foreground transition-all duration-200 rounded-lg"
               activeClassName="text-primary font-semibold"
             >
               <item.icon className="h-5 w-5" />
-              <span>{item.label.split(' ')[0]}</span>
+              <span>{item.label}</span>
             </NavLink>
           ))}
         </div>
