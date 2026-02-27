@@ -70,7 +70,7 @@ export function useAuth() {
     if (!user) throw new Error('Not logged in');
     const { data, error } = await supabase
       .from('profiles')
-      .update(updates)
+      .update(updates as any)
       .eq('user_id', user.id)
       .select()
       .single();
