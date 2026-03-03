@@ -1,19 +1,23 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { LearningResource, StudySession, RoadmapStage, Friendship, ChatMessage, Notification } from './types';
 
-export function assignDifficulty(type: LearningResource['type'], url: string): LearningResource['difficulty'] {
-  const lower = url.toLowerCase();
-  if (type === 'course' || type === 'book') return 'Advanced';
-  if (type === 'tutorial' || type === 'video') {
-    if (lower.includes('advanced') || lower.includes('expert')) return 'Advanced';
-    if (lower.includes('intermediate') || lower.includes('mid')) return 'Intermediate';
-    return 'Beginner';
-  }
-  if (type === 'article' || type === 'podcast') {
-    if (lower.includes('advanced')) return 'Advanced';
-    if (lower.includes('intermediate')) return 'Intermediate';
-    return 'Beginner';
-  }
+export function assignDifficulty(type: LearningResource['type'], url: string, title?: string): LearningResource['difficulty'] {
+  const combined = `${url} ${title || ''}`.toLowerCase();
+
+  // Keyword-based classification (check title + url)
+  const advancedKeywords = ['advanced', 'expert', 'mastery', 'deep dive', 'architecture', 'system design', 'optimization', 'performance'];
+  const intermediateKeywords = ['intermediate', 'mid-level', 'practical', 'hands-on', 'project', 'building', 'real-world'];
+  const beginnerKeywords = ['beginner', 'intro', 'getting started', 'basics', 'fundamentals', 'first steps', '101', 'for beginners'];
+
+  if (beginnerKeywords.some(k => combined.includes(k))) return 'Beginner';
+  if (advancedKeywords.some(k => combined.includes(k))) return 'Advanced';
+  if (intermediateKeywords.some(k => combined.includes(k))) return 'Intermediate';
+
+  // Type-based fallback
+  if (type === 'course' || type === 'book') return 'Intermediate';
+  if (type === 'tutorial') return 'Beginner';
+  if (type === 'article' || type === 'podcast') return 'Beginner';
+  if (type === 'video') return 'Beginner';
   return 'Beginner';
 }
 
@@ -41,7 +45,7 @@ export async function addResource(userId: string, title: string, url: string, ty
       title,
       url,
       type,
-      difficulty: assignDifficulty(type, url),
+      difficulty: assignDifficulty(type, url, title),
       sort_order: count ?? 0,
     })
     .select()

@@ -1,20 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Profile, LearningResource, StudySession, RoadmapStage } from '@/lib/types';
 import { getResources, getSessions, getProgress, getStreak, getWeeklyMinutes, getConsistencyScore, getRoadmapStages } from '@/lib/storage';
 import { getDailyQuote } from '@/lib/quotes';
-import { Flame, Target, BookOpen, CheckCircle2, Quote, Clock, BarChart3, TrendingUp, Map } from 'lucide-react';
+import { Flame, Target, BookOpen, CheckCircle2, Quote, Clock, BarChart3, TrendingUp, Map, Lock } from 'lucide-react';
+import PremiumBadge from '@/components/PremiumBadge';
+import UpgradeCard from '@/components/UpgradeCard';
+import UpgradeDialog from '@/components/UpgradeDialog';
 
 interface DashboardProps {
   userId: string;
   profile: Profile;
+  isPremium?: boolean;
 }
 
-const Dashboard = ({ userId, profile }: DashboardProps) => {
+const Dashboard = ({ userId, profile, isPremium }: DashboardProps) => {
   const [resources, setResources] = useState<LearningResource[]>([]);
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [roadmapStages, setRoadmapStages] = useState<RoadmapStage[]>([]);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   useEffect(() => {
     getResources(userId).then(setResources);
@@ -40,7 +45,7 @@ const Dashboard = ({ userId, profile }: DashboardProps) => {
     { icon: BarChart3, value: `${totalMinutes}m`, label: 'Total time', gradient: 'gradient-primary' },
     { icon: BookOpen, value: resources.length, label: 'Resources', gradient: 'gradient-secondary' },
     { icon: CheckCircle2, value: completed, label: 'Completed', color: 'bg-success' },
-    { icon: TrendingUp, value: `${consistencyScore}%`, label: 'Consistency', gradient: 'gradient-accent' },
+    { icon: TrendingUp, value: `${consistencyScore}%`, label: 'Consistency', gradient: 'gradient-accent', premium: true },
     { icon: Map, value: `${roadmapProgress}%`, label: 'Roadmap', gradient: 'gradient-primary' },
   ];
 
@@ -73,15 +78,27 @@ const Dashboard = ({ userId, profile }: DashboardProps) => {
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {stats.map((stat, i) => (
-          <Card key={i} className="overflow-hidden border-0 shadow-md hover:shadow-lg transition-shadow">
+          <Card key={i} className={`overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-200 ${stat.premium && !isPremium ? 'relative' : ''}`}>
             <CardContent className="pt-4 pb-3.5">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-xl ${stat.gradient || stat.color}`}>
                   <stat.icon className="h-4 w-4 text-primary-foreground" />
                 </div>
                 <div>
-                  <p className="text-xl font-bold font-display">{stat.value}</p>
-                  <p className="text-[11px] text-muted-foreground">{stat.label}</p>
+                  {stat.premium && !isPremium ? (
+                    <>
+                      <div className="flex items-center gap-1">
+                        <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">PRO</p>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">{stat.label}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xl font-bold font-display">{stat.value}</p>
+                      <p className="text-[11px] text-muted-foreground">{stat.label}</p>
+                    </>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -102,6 +119,11 @@ const Dashboard = ({ userId, profile }: DashboardProps) => {
         </CardContent>
       </Card>
 
+      {/* Upgrade card for free users */}
+      {!isPremium && (
+        <UpgradeCard onUpgrade={() => setShowUpgrade(true)} />
+      )}
+
       {resources.length === 0 && (
         <Card className="border-dashed border-2">
           <CardContent className="pt-8 pb-8 text-center">
@@ -113,6 +135,8 @@ const Dashboard = ({ userId, profile }: DashboardProps) => {
           </CardContent>
         </Card>
       )}
+
+      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
     </div>
   );
 };

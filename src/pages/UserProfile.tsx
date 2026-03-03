@@ -6,20 +6,25 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Profile } from '@/lib/types';
 import { Mail, Calendar, GraduationCap, Clock, Target } from 'lucide-react';
+import PremiumBadge from '@/components/PremiumBadge';
+import UpgradeCard from '@/components/UpgradeCard';
+import UpgradeDialog from '@/components/UpgradeDialog';
 
 interface UserProfileProps {
   profile: Profile;
   email: string;
   onUpdate: (updates: Partial<Profile>) => Promise<Profile>;
+  isPremium?: boolean;
 }
 
-const UserProfile = ({ profile, email, onUpdate }: UserProfileProps) => {
+const UserProfile = ({ profile, email, onUpdate, isPremium }: UserProfileProps) => {
   const [name, setName] = useState(profile.full_name);
   const [goal, setGoal] = useState(profile.learning_goal);
   const [studyTime, setStudyTime] = useState(profile.study_time_minutes.toString());
   const [weeklyHours, setWeeklyHours] = useState(profile.weekly_hours.toString());
   const [proficiency, setProficiency] = useState(profile.proficiency_level);
   const [saved, setSaved] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,9 +47,12 @@ const UserProfile = ({ profile, email, onUpdate }: UserProfileProps) => {
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold font-display">{profile.full_name || 'Your Profile'}</h1>
         <p className="text-muted-foreground mt-1">{email}</p>
-        <div className="flex justify-center gap-2 mt-2">
+        <div className="flex justify-center gap-2 mt-2 flex-wrap">
           <Badge variant="outline" className="text-xs capitalize">{profile.proficiency_level}</Badge>
           {profile.is_student && <Badge variant="outline" className="text-xs">🎓 {profile.student_level || 'Student'}</Badge>}
+          {isPremium ? <PremiumBadge /> : (
+            <Badge variant="outline" className="text-xs">Free Plan</Badge>
+          )}
         </div>
       </div>
 
@@ -112,6 +120,10 @@ const UserProfile = ({ profile, email, onUpdate }: UserProfileProps) => {
           </div>
         </CardContent>
       </Card>
+
+      {!isPremium && <UpgradeCard onUpgrade={() => setShowUpgrade(true)} />}
+
+      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import AuthPage from './pages/AuthPage';
 import ResetPassword from './pages/ResetPassword';
 import OnboardingPage from './pages/OnboardingPage';
@@ -23,6 +24,7 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const { user, profile, loading, login, register, logout, updateProfile, fetchProfile } = useAuth();
+  const { isPremium, canGenerateRoadmap, canAddResource, roadmapGenerationsLeft, resourcesLeft, incrementRoadmapGeneration, incrementResourceCount, decrementResourceCount, FREE_LIMITS } = useSubscription(user?.id ?? null);
 
   if (loading) {
     return (
@@ -37,7 +39,6 @@ const AppContent = () => {
     );
   }
 
-  // Public reset password route
   if (window.location.pathname === '/reset-password') {
     return (
       <BrowserRouter>
@@ -59,7 +60,6 @@ const AppContent = () => {
     }} />;
   }
 
-  // Onboarding check
   if (!profile.onboarding_completed) {
     return <OnboardingPage
       userName={profile.full_name}
@@ -74,17 +74,44 @@ const AppContent = () => {
 
   return (
     <BrowserRouter>
-      <AppLayout onLogout={logout} userName={profile.full_name || user.email || ''} userId={user.id}>
+      <AppLayout onLogout={logout} userName={profile.full_name || user.email || ''} userId={user.id} isPremium={isPremium}>
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard userId={user.id} profile={profile} />} />
-          <Route path="/roadmap" element={<RoadmapPage userId={user.id} learningGoal={profile.learning_goal} />} />
+          <Route path="/dashboard" element={<Dashboard userId={user.id} profile={profile} isPremium={isPremium} />} />
+          <Route path="/roadmap" element={
+            <RoadmapPage
+              userId={user.id}
+              learningGoal={profile.learning_goal}
+              isPremium={isPremium}
+              canGenerate={canGenerateRoadmap()}
+              generationsLeft={roadmapGenerationsLeft()}
+              onGenerate={incrementRoadmapGeneration}
+            />
+          } />
           <Route path="/learning-path" element={<LearningPath userId={user.id} />} />
-          <Route path="/explore" element={<ExplorePage userId={user.id} learningGoal={profile.learning_goal} />} />
-          <Route path="/resources" element={<ResourceLibrary userId={user.id} />} />
+          <Route path="/explore" element={
+            <ExplorePage
+              userId={user.id}
+              learningGoal={profile.learning_goal}
+              isPremium={isPremium}
+              canAddResource={canAddResource()}
+              resourcesLeft={resourcesLeft()}
+              onResourceAdded={incrementResourceCount}
+            />
+          } />
+          <Route path="/resources" element={
+            <ResourceLibrary
+              userId={user.id}
+              isPremium={isPremium}
+              canAddResource={canAddResource()}
+              resourcesLeft={resourcesLeft()}
+              onResourceAdded={incrementResourceCount}
+              onResourceDeleted={decrementResourceCount}
+            />
+          } />
           <Route path="/planner" element={<StudyPlanner userId={user.id} studyTimeMinutes={profile.study_time_minutes} />} />
           <Route path="/friends" element={<FriendsPage userId={user.id} userName={profile.full_name} />} />
-          <Route path="/profile" element={<UserProfile profile={profile} email={user.email || ''} onUpdate={updateProfile} />} />
+          <Route path="/profile" element={<UserProfile profile={profile} email={user.email || ''} onUpdate={updateProfile} isPremium={isPremium} />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AppLayout>

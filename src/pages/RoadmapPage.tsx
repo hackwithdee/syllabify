@@ -5,13 +5,19 @@ import { Badge } from '@/components/ui/badge';
 import { RoadmapStage } from '@/lib/types';
 import { getRoadmapStages, toggleStageComplete, clearRoadmap, addRoadmapStage } from '@/lib/storage';
 import { certificationPaths } from '@/lib/roadmapData';
-import { CheckCircle2, Circle, Sparkles, Loader2, Map, Trash2, ArrowDown } from 'lucide-react';
+import { CheckCircle2, Circle, Sparkles, Loader2, Map, Trash2, ArrowDown, Lock, Crown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import PremiumBadge from '@/components/PremiumBadge';
+import UpgradeDialog from '@/components/UpgradeDialog';
 
 interface RoadmapPageProps {
   userId: string;
   learningGoal: string;
+  isPremium?: boolean;
+  canGenerate: boolean;
+  generationsLeft: number;
+  onGenerate: () => Promise<void>;
 }
 
 const phaseColors: Record<string, string> = {
@@ -28,11 +34,12 @@ const phaseLabels: Record<string, string> = {
   certification: '🎓 Certification',
 };
 
-const RoadmapPage = ({ userId, learningGoal }: RoadmapPageProps) => {
+const RoadmapPage = ({ userId, learningGoal, isPremium, canGenerate, generationsLeft, onGenerate }: RoadmapPageProps) => {
   const { toast } = useToast();
   const [stages, setStages] = useState<RoadmapStage[]>([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const refresh = () => getRoadmapStages(userId).then(setStages);
   useEffect(() => { refresh(); }, [userId]);
@@ -48,6 +55,10 @@ const RoadmapPage = ({ userId, learningGoal }: RoadmapPageProps) => {
   };
 
   const handleLoadCertPath = async (pathId: string) => {
+    if (!isPremium) {
+      setShowUpgrade(true);
+      return;
+    }
     const path = certificationPaths.find(p => p.id === pathId);
     if (!path) return;
     setLoading(true);
@@ -70,6 +81,10 @@ const RoadmapPage = ({ userId, learningGoal }: RoadmapPageProps) => {
       toast({ title: 'Set a goal first', description: 'Go to your Profile and set a learning goal.', variant: 'destructive' });
       return;
     }
+    if (!canGenerate) {
+      setShowUpgrade(true);
+      return;
+    }
     setGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-roadmap', {
@@ -86,6 +101,7 @@ const RoadmapPage = ({ userId, learningGoal }: RoadmapPageProps) => {
           stage_order: i,
         });
       }
+      await onGenerate();
       await refresh();
       toast({ title: 'Roadmap generated!', description: 'Your AI-powered roadmap is ready.' });
     } catch (err: any) {
@@ -146,6 +162,13 @@ const RoadmapPage = ({ userId, learningGoal }: RoadmapPageProps) => {
                   ? `Generate a roadmap for: "${learningGoal}"`
                   : 'Set a learning goal to generate a personalized roadmap'}
               </p>
+              {!isPremium && (
+                <p className="text-xs mt-1 opacity-75">
+                  {generationsLeft > 0
+                    ? `${generationsLeft} free generation${generationsLeft > 1 ? 's' : ''} remaining this month`
+                    : 'No free generations left — upgrade to Premium'}
+                </p>
+              )}
             </div>
             <Button onClick={handleAIGenerate} disabled={generating || !learningGoal.trim()} variant="secondary" className="shrink-0">
               {generating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
@@ -158,10 +181,18 @@ const RoadmapPage = ({ userId, learningGoal }: RoadmapPageProps) => {
       {/* Certification paths */}
       {stages.length === 0 && (
         <div>
-          <h2 className="text-lg font-bold font-display mb-3">Or choose a certification path</h2>
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-lg font-bold font-display">Or choose a certification path</h2>
+            {!isPremium && <PremiumBadge />}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {certificationPaths.map(path => (
-              <Card key={path.id} className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleLoadCertPath(path.id)}>
+              <Card key={path.id} className={`border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer ${!isPremium ? 'relative' : ''}`} onClick={() => handleLoadCertPath(path.id)}>
+                {!isPremium && (
+                  <div className="absolute top-3 right-3">
+                    <Lock className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                )}
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">{path.icon}</span>
@@ -172,7 +203,7 @@ const RoadmapPage = ({ userId, learningGoal }: RoadmapPageProps) => {
                 <CardContent>
                   <p className="text-xs text-muted-foreground">{path.stages.length} stages</p>
                   <Button variant="outline" size="sm" className="w-full mt-2" disabled={loading}>
-                    {loading ? 'Loading...' : 'Use This Path'}
+                    {loading ? 'Loading...' : !isPremium ? 'Premium Only' : 'Use This Path'}
                   </Button>
                 </CardContent>
               </Card>
@@ -235,6 +266,8 @@ const RoadmapPage = ({ userId, learningGoal }: RoadmapPageProps) => {
           </CardContent>
         </Card>
       )}
+
+      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
     </div>
   );
 };
