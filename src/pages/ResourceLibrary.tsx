@@ -7,10 +7,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { LearningResource, ResourceType } from '@/lib/types';
 import { getResources, addResource, deleteResource, toggleResourceComplete } from '@/lib/storage';
-import { Plus, Trash2, ExternalLink, CheckCircle2, Circle, Search } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, CheckCircle2, Circle, Search, Lock } from 'lucide-react';
+import UpgradeDialog from '@/components/UpgradeDialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface ResourceLibraryProps {
   userId: string;
+  isPremium?: boolean;
+  canAddResource: boolean;
+  resourcesLeft: number;
+  onResourceAdded: () => Promise<void>;
+  onResourceDeleted: () => Promise<void>;
 }
 
 const typeLabels: Record<ResourceType, string> = {
@@ -24,7 +31,8 @@ const difficultyColors: Record<string, string> = {
   Advanced: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
-const ResourceLibrary = ({ userId }: ResourceLibraryProps) => {
+const ResourceLibrary = ({ userId, isPremium, canAddResource, resourcesLeft, onResourceAdded, onResourceDeleted }: ResourceLibraryProps) => {
+  const { toast } = useToast();
   const [resources, setResources] = useState<LearningResource[]>([]);
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
@@ -32,22 +40,33 @@ const ResourceLibrary = ({ userId }: ResourceLibraryProps) => {
   const [showForm, setShowForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [filterDifficulty, setFilterDifficulty] = useState<string>('all');
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const refresh = () => getResources(userId).then(setResources);
   useEffect(() => { refresh(); }, [userId]);
 
   const filteredResources = useMemo(() => {
     return resources.filter(r => {
-      const matchesSearch = !searchQuery || r.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = !searchQuery ||
+        r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.difficulty.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = filterType === 'all' || r.type === filterType;
-      return matchesSearch && matchesType;
+      const matchesDifficulty = filterDifficulty === 'all' || r.difficulty === filterDifficulty;
+      return matchesSearch && matchesType && matchesDifficulty;
     });
-  }, [resources, searchQuery, filterType]);
+  }, [resources, searchQuery, filterType, filterDifficulty]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !url.trim()) return;
+    if (!canAddResource) {
+      setShowUpgrade(true);
+      return;
+    }
     await addResource(userId, title.trim(), url.trim(), type);
+    await onResourceAdded();
     setTitle(''); setUrl(''); setType('article'); setShowForm(false);
     refresh();
   };
@@ -59,7 +78,16 @@ const ResourceLibrary = ({ userId }: ResourceLibraryProps) => {
 
   const handleDelete = async (id: string) => {
     await deleteResource(id);
+    await onResourceDeleted();
     refresh();
+  };
+
+  const handleShowAdd = () => {
+    if (!canAddResource) {
+      setShowUpgrade(true);
+      return;
+    }
+    setShowForm(!showForm);
   };
 
   return (
@@ -67,10 +95,14 @@ const ResourceLibrary = ({ userId }: ResourceLibraryProps) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold font-display">Resource Library</h1>
-          <p className="text-muted-foreground mt-1">{resources.length} resources</p>
+          <p className="text-muted-foreground mt-1">
+            {resources.length} resources
+            {!isPremium && <span className="text-xs ml-2">· {resourcesLeft === Infinity ? '∞' : resourcesLeft} left on free plan</span>}
+          </p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)} className="gradient-primary border-0 w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-1" /> Add Resource
+        <Button onClick={handleShowAdd} className="gradient-primary border-0 w-full sm:w-auto">
+          {!canAddResource ? <Lock className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+          Add Resource
         </Button>
       </div>
 
@@ -81,12 +113,12 @@ const ResourceLibrary = ({ userId }: ResourceLibraryProps) => {
           <Input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search resources..."
+            placeholder="Search by title, type, difficulty..."
             className="pl-9 h-11"
           />
         </div>
         <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-full sm:w-40 h-11"><SelectValue placeholder="All types" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-36 h-11"><SelectValue placeholder="All types" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All types</SelectItem>
             {Object.entries(typeLabels).map(([k, v]) => (
@@ -94,10 +126,19 @@ const ResourceLibrary = ({ userId }: ResourceLibraryProps) => {
             ))}
           </SelectContent>
         </Select>
+        <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
+          <SelectTrigger className="w-full sm:w-40 h-11"><SelectValue placeholder="All levels" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All levels</SelectItem>
+            <SelectItem value="Beginner">Beginner</SelectItem>
+            <SelectItem value="Intermediate">Intermediate</SelectItem>
+            <SelectItem value="Advanced">Advanced</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {showForm && (
-        <Card className="border-0 shadow-md">
+        <Card className="border-0 shadow-md animate-fade-in">
           <CardHeader><CardTitle className="text-lg font-display">Add New Resource</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleAdd} className="space-y-4">
@@ -120,6 +161,7 @@ const ResourceLibrary = ({ userId }: ResourceLibraryProps) => {
                   </SelectContent>
                 </Select>
               </div>
+              <p className="text-xs text-muted-foreground">Difficulty is automatically classified based on resource type and URL keywords.</p>
               <div className="flex gap-2">
                 <Button type="submit" className="gradient-primary border-0">Save Resource</Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
@@ -133,14 +175,14 @@ const ResourceLibrary = ({ userId }: ResourceLibraryProps) => {
         <Card className="border-dashed border-2">
           <CardContent className="pt-8 pb-8 text-center">
             <p className="text-muted-foreground">
-              {resources.length === 0 ? 'No resources added yet. Click "Add Resource" to get started.' : 'No resources match your search.'}
+              {resources.length === 0 ? 'No resources added yet. Click "Add Resource" to get started.' : 'No resources match your filters.'}
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-2">
           {filteredResources.map(resource => (
-            <Card key={resource.id} className={`border-0 shadow-sm hover:shadow-md transition-shadow ${resource.completed ? 'opacity-60' : ''}`}>
+            <Card key={resource.id} className={`border-0 shadow-sm hover:shadow-md transition-all duration-200 ${resource.completed ? 'opacity-60' : ''}`}>
               <CardContent className="py-3.5 flex items-center gap-3">
                 <button onClick={() => handleToggle(resource)} className="shrink-0">
                   {resource.completed ? <CheckCircle2 className="h-5 w-5 text-success" /> : <Circle className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />}
@@ -163,6 +205,8 @@ const ResourceLibrary = ({ userId }: ResourceLibraryProps) => {
           ))}
         </div>
       )}
+
+      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
     </div>
   );
 };

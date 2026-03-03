@@ -5,13 +5,18 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { starterPaths, StarterPath, StarterResource } from '@/lib/starterPaths';
 import { addResource } from '@/lib/storage';
-import { Sparkles, Plus, CheckCircle2, Search, Loader2, ExternalLink } from 'lucide-react';
+import { Sparkles, Plus, CheckCircle2, Search, Loader2, ExternalLink, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import UpgradeDialog from '@/components/UpgradeDialog';
 
 interface ExplorePageProps {
   userId: string;
   learningGoal: string;
+  isPremium?: boolean;
+  canAddResource: boolean;
+  resourcesLeft: number;
+  onResourceAdded: () => Promise<void>;
 }
 
 const difficultyColors: Record<string, string> = {
@@ -20,13 +25,14 @@ const difficultyColors: Record<string, string> = {
   Advanced: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
-const ExplorePage = ({ userId, learningGoal }: ExplorePageProps) => {
+const ExplorePage = ({ userId, learningGoal, isPremium, canAddResource, resourcesLeft, onResourceAdded }: ExplorePageProps) => {
   const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [addedResources, setAddedResources] = useState<Set<string>>(new Set());
   const [aiSuggestions, setAiSuggestions] = useState<StarterResource[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiGenerated, setAiGenerated] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const filteredPaths = starterPaths.filter(p =>
     !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.description.toLowerCase().includes(search.toLowerCase())
@@ -35,8 +41,13 @@ const ExplorePage = ({ userId, learningGoal }: ExplorePageProps) => {
   const handleAddResource = async (resource: StarterResource) => {
     const key = resource.title + resource.url;
     if (addedResources.has(key)) return;
+    if (!canAddResource) {
+      setShowUpgrade(true);
+      return;
+    }
     try {
       await addResource(userId, resource.title, resource.url, resource.type);
+      await onResourceAdded();
       setAddedResources(prev => new Set(prev).add(key));
       toast({ title: 'Added!', description: `"${resource.title}" added to your library.` });
     } catch {
@@ -48,8 +59,13 @@ const ExplorePage = ({ userId, learningGoal }: ExplorePageProps) => {
     for (const resource of path.resources) {
       const key = resource.title + resource.url;
       if (!addedResources.has(key)) {
+        if (!canAddResource) {
+          setShowUpgrade(true);
+          return;
+        }
         try {
           await addResource(userId, resource.title, resource.url, resource.type);
+          await onResourceAdded();
           setAddedResources(prev => new Set(prev).add(key));
         } catch { /* skip */ }
       }
@@ -75,7 +91,7 @@ const ExplorePage = ({ userId, learningGoal }: ExplorePageProps) => {
       if (msg.includes('429') || msg.includes('rate limit')) {
         toast({ title: 'Rate limited', description: 'Too many requests — please try again in a moment.', variant: 'destructive' });
       } else if (msg.includes('402')) {
-        toast({ title: 'Credits needed', description: 'AI usage credits exhausted. Add more in Settings.', variant: 'destructive' });
+        toast({ title: 'Credits needed', description: 'AI usage credits exhausted.', variant: 'destructive' });
       } else {
         toast({ title: 'AI Error', description: 'Could not generate suggestions. Try again.', variant: 'destructive' });
       }
@@ -88,7 +104,10 @@ const ExplorePage = ({ userId, learningGoal }: ExplorePageProps) => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold font-display">Explore</h1>
-        <p className="text-muted-foreground mt-1">Discover learning paths and get AI-powered recommendations</p>
+        <p className="text-muted-foreground mt-1">
+          Discover learning paths and get AI-powered recommendations
+          {!isPremium && <span className="text-xs ml-2">· {resourcesLeft === Infinity ? '∞' : resourcesLeft} resources left</span>}
+        </p>
       </div>
 
       {/* AI Suggestion */}
@@ -121,7 +140,7 @@ const ExplorePage = ({ userId, learningGoal }: ExplorePageProps) => {
 
       {/* AI Results */}
       {aiSuggestions.length > 0 && (
-        <Card className="border-0 shadow-md">
+        <Card className="border-0 shadow-md animate-fade-in">
           <CardHeader>
             <CardTitle className="text-lg font-display flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" /> AI Suggestions
@@ -169,7 +188,7 @@ const ExplorePage = ({ userId, learningGoal }: ExplorePageProps) => {
       {/* Starter Paths */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredPaths.map(path => (
-          <Card key={path.id} className="border-0 shadow-md hover:shadow-lg transition-shadow overflow-hidden">
+          <Card key={path.id} className="border-0 shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -204,6 +223,8 @@ const ExplorePage = ({ userId, learningGoal }: ExplorePageProps) => {
           </Card>
         ))}
       </div>
+
+      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
     </div>
   );
 };
