@@ -12,16 +12,22 @@ export interface Subscription {
   updated_at: string;
 }
 
-const FREE_LIMITS = {
+export const FREE_LIMITS = {
   roadmapGenerationsPerMonth: 2,
-  maxResources: 10,
+  maxResources: 15,
+};
+
+export const PRICING = {
+  monthly: 2500,
+  yearly: 20000,
+  currency: '₦',
 };
 
 export function useSubscription(userId: string | null) {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetch = useCallback(async () => {
+  const fetchSub = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
     const { data } = await supabase
       .from('user_subscriptions')
@@ -31,7 +37,6 @@ export function useSubscription(userId: string | null) {
     if (data) {
       setSubscription(data as unknown as Subscription);
     } else {
-      // Auto-create if missing (for existing users)
       const { data: created } = await supabase
         .from('user_subscriptions')
         .insert({ user_id: userId })
@@ -42,7 +47,7 @@ export function useSubscription(userId: string | null) {
     setLoading(false);
   }, [userId]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchSub(); }, [fetchSub]);
 
   const isPremium = subscription?.tier === 'premium';
 
@@ -50,7 +55,7 @@ export function useSubscription(userId: string | null) {
     if (isPremium) return true;
     if (!subscription) return false;
     const resetAt = new Date(subscription.roadmap_generations_reset_at);
-    if (new Date() > resetAt) return true; // reset period passed
+    if (new Date() > resetAt) return true;
     return subscription.roadmap_generations_used < FREE_LIMITS.roadmapGenerationsPerMonth;
   };
 
@@ -88,7 +93,7 @@ export function useSubscription(userId: string | null) {
         roadmap_generations_used: subscription.roadmap_generations_used + 1,
       }).eq('user_id', subscription.user_id);
     }
-    await fetch();
+    await fetchSub();
   };
 
   const incrementResourceCount = async () => {
@@ -96,7 +101,7 @@ export function useSubscription(userId: string | null) {
     await supabase.from('user_subscriptions').update({
       resources_count: subscription.resources_count + 1,
     }).eq('user_id', subscription.user_id);
-    await fetch();
+    await fetchSub();
   };
 
   const decrementResourceCount = async () => {
@@ -104,7 +109,23 @@ export function useSubscription(userId: string | null) {
     await supabase.from('user_subscriptions').update({
       resources_count: Math.max(0, subscription.resources_count - 1),
     }).eq('user_id', subscription.user_id);
-    await fetch();
+    await fetchSub();
+  };
+
+  const upgradeToPremium = async () => {
+    if (!subscription) return;
+    await supabase.from('user_subscriptions').update({
+      tier: 'premium',
+    }).eq('user_id', subscription.user_id);
+    await fetchSub();
+  };
+
+  const downgradeToFree = async () => {
+    if (!subscription) return;
+    await supabase.from('user_subscriptions').update({
+      tier: 'free',
+    }).eq('user_id', subscription.user_id);
+    await fetchSub();
   };
 
   return {
@@ -118,7 +139,10 @@ export function useSubscription(userId: string | null) {
     incrementRoadmapGeneration,
     incrementResourceCount,
     decrementResourceCount,
-    refresh: fetch,
+    upgradeToPremium,
+    downgradeToFree,
+    refresh: fetchSub,
     FREE_LIMITS,
+    PRICING,
   };
 }

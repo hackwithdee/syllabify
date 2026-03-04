@@ -24,7 +24,7 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const { user, profile, loading, login, register, logout, updateProfile, fetchProfile } = useAuth();
-  const { isPremium, canGenerateRoadmap, canAddResource, roadmapGenerationsLeft, resourcesLeft, incrementRoadmapGeneration, incrementResourceCount, decrementResourceCount, FREE_LIMITS } = useSubscription(user?.id ?? null);
+  const sub = useSubscription(user?.id ?? null);
 
   if (loading) {
     return (
@@ -74,18 +74,19 @@ const AppContent = () => {
 
   return (
     <BrowserRouter>
-      <AppLayout onLogout={logout} userName={profile.full_name || user.email || ''} userId={user.id} isPremium={isPremium}>
+      <AppLayout onLogout={logout} userName={profile.full_name || user.email || ''} userId={user.id} isPremium={sub.isPremium} onUpgrade={sub.upgradeToPremium}>
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard userId={user.id} profile={profile} isPremium={isPremium} />} />
+          <Route path="/dashboard" element={<Dashboard userId={user.id} profile={profile} isPremium={sub.isPremium} onUpgrade={sub.upgradeToPremium} />} />
           <Route path="/roadmap" element={
             <RoadmapPage
               userId={user.id}
               learningGoal={profile.learning_goal}
-              isPremium={isPremium}
-              canGenerate={canGenerateRoadmap()}
-              generationsLeft={roadmapGenerationsLeft()}
-              onGenerate={incrementRoadmapGeneration}
+              isPremium={sub.isPremium}
+              canGenerate={sub.canGenerateRoadmap()}
+              generationsLeft={sub.roadmapGenerationsLeft()}
+              onGenerate={sub.incrementRoadmapGeneration}
+              onUpgrade={sub.upgradeToPremium}
             />
           } />
           <Route path="/learning-path" element={<LearningPath userId={user.id} />} />
@@ -93,25 +94,34 @@ const AppContent = () => {
             <ExplorePage
               userId={user.id}
               learningGoal={profile.learning_goal}
-              isPremium={isPremium}
-              canAddResource={canAddResource()}
-              resourcesLeft={resourcesLeft()}
-              onResourceAdded={incrementResourceCount}
+              isPremium={sub.isPremium}
+              canAddResource={sub.canAddResource()}
+              resourcesLeft={sub.resourcesLeft()}
+              onResourceAdded={sub.incrementResourceCount}
             />
           } />
           <Route path="/resources" element={
             <ResourceLibrary
               userId={user.id}
-              isPremium={isPremium}
-              canAddResource={canAddResource()}
-              resourcesLeft={resourcesLeft()}
-              onResourceAdded={incrementResourceCount}
-              onResourceDeleted={decrementResourceCount}
+              isPremium={sub.isPremium}
+              canAddResource={sub.canAddResource()}
+              resourcesLeft={sub.resourcesLeft()}
+              onResourceAdded={sub.incrementResourceCount}
+              onResourceDeleted={sub.decrementResourceCount}
             />
           } />
           <Route path="/planner" element={<StudyPlanner userId={user.id} studyTimeMinutes={profile.study_time_minutes} />} />
           <Route path="/friends" element={<FriendsPage userId={user.id} userName={profile.full_name} />} />
-          <Route path="/profile" element={<UserProfile profile={profile} email={user.email || ''} onUpdate={updateProfile} isPremium={isPremium} />} />
+          <Route path="/profile" element={
+            <UserProfile
+              profile={profile}
+              email={user.email || ''}
+              onUpdate={updateProfile}
+              isPremium={sub.isPremium}
+              onUpgrade={sub.upgradeToPremium}
+              onDowngrade={sub.downgradeToFree}
+            />
+          } />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AppLayout>

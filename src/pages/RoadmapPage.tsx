@@ -18,6 +18,7 @@ interface RoadmapPageProps {
   canGenerate: boolean;
   generationsLeft: number;
   onGenerate: () => Promise<void>;
+  onUpgrade?: () => Promise<void>;
 }
 
 const phaseColors: Record<string, string> = {
@@ -34,7 +35,7 @@ const phaseLabels: Record<string, string> = {
   certification: '🎓 Certification',
 };
 
-const RoadmapPage = ({ userId, learningGoal, isPremium, canGenerate, generationsLeft, onGenerate }: RoadmapPageProps) => {
+const RoadmapPage = ({ userId, learningGoal, isPremium, canGenerate, generationsLeft, onGenerate, onUpgrade }: RoadmapPageProps) => {
   const { toast } = useToast();
   const [stages, setStages] = useState<RoadmapStage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -132,7 +133,6 @@ const RoadmapPage = ({ userId, learningGoal, isPremium, canGenerate, generations
         )}
       </div>
 
-      {/* Progress bar */}
       {stages.length > 0 && (
         <Card className="border-0 shadow-md">
           <CardContent className="py-4">
@@ -148,7 +148,6 @@ const RoadmapPage = ({ userId, learningGoal, isPremium, canGenerate, generations
         </Card>
       )}
 
-      {/* AI Generate */}
       <Card className="border-0 gradient-primary text-primary-foreground overflow-hidden">
         <CardContent className="py-5">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -158,9 +157,7 @@ const RoadmapPage = ({ userId, learningGoal, isPremium, canGenerate, generations
                 <h3 className="font-display font-bold text-lg">AI Roadmap Generator</h3>
               </div>
               <p className="text-sm opacity-90">
-                {learningGoal
-                  ? `Generate a roadmap for: "${learningGoal}"`
-                  : 'Set a learning goal to generate a personalized roadmap'}
+                {learningGoal ? `Generate a roadmap for: "${learningGoal}"` : 'Set a learning goal to generate a personalized roadmap'}
               </p>
               {!isPremium && (
                 <p className="text-xs mt-1 opacity-75">
@@ -169,6 +166,7 @@ const RoadmapPage = ({ userId, learningGoal, isPremium, canGenerate, generations
                     : 'No free generations left — upgrade to Premium'}
                 </p>
               )}
+              {isPremium && <p className="text-xs mt-1 opacity-75">✨ Unlimited generations with Premium</p>}
             </div>
             <Button onClick={handleAIGenerate} disabled={generating || !learningGoal.trim()} variant="secondary" className="shrink-0">
               {generating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
@@ -178,7 +176,6 @@ const RoadmapPage = ({ userId, learningGoal, isPremium, canGenerate, generations
         </CardContent>
       </Card>
 
-      {/* Certification paths */}
       {stages.length === 0 && (
         <div>
           <div className="flex items-center gap-2 mb-3">
@@ -190,7 +187,7 @@ const RoadmapPage = ({ userId, learningGoal, isPremium, canGenerate, generations
               <Card key={path.id} className={`border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer ${!isPremium ? 'relative' : ''}`} onClick={() => handleLoadCertPath(path.id)}>
                 {!isPremium && (
                   <div className="absolute top-3 right-3">
-                    <Lock className="h-4 w-4 text-muted-foreground" />
+                    <Lock className="h-4 w-4 text-amber-500" />
                   </div>
                 )}
                 <CardHeader className="pb-2">
@@ -203,7 +200,9 @@ const RoadmapPage = ({ userId, learningGoal, isPremium, canGenerate, generations
                 <CardContent>
                   <p className="text-xs text-muted-foreground">{path.stages.length} stages</p>
                   <Button variant="outline" size="sm" className="w-full mt-2" disabled={loading}>
-                    {loading ? 'Loading...' : !isPremium ? 'Premium Only' : 'Use This Path'}
+                    {loading ? 'Loading...' : !isPremium ? (
+                      <><Crown className="h-3.5 w-3.5 mr-1 text-amber-500" /> Upgrade to Unlock</>
+                    ) : 'Use This Path'}
                   </Button>
                 </CardContent>
               </Card>
@@ -212,7 +211,6 @@ const RoadmapPage = ({ userId, learningGoal, isPremium, canGenerate, generations
         </div>
       )}
 
-      {/* Visual roadmap */}
       {stages.length > 0 && (
         <div className="space-y-6">
           {phases.map((phase, pi) => {
@@ -232,14 +230,11 @@ const RoadmapPage = ({ userId, learningGoal, isPremium, canGenerate, generations
                           <button onClick={() => handleToggle(stage)} className="shrink-0">
                             {stage.completed
                               ? <CheckCircle2 className="h-5 w-5 text-success" />
-                              : <Circle className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
-                            }
+                              : <Circle className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />}
                           </button>
                           <div className="flex-1 min-w-0">
                             <p className={`font-medium text-sm ${stage.completed ? 'line-through' : ''}`}>{stage.title}</p>
-                            {stage.description && (
-                              <p className="text-xs text-muted-foreground mt-0.5">{stage.description}</p>
-                            )}
+                            {stage.description && <p className="text-xs text-muted-foreground mt-0.5">{stage.description}</p>}
                           </div>
                         </CardContent>
                       </Card>
@@ -267,7 +262,7 @@ const RoadmapPage = ({ userId, learningGoal, isPremium, canGenerate, generations
         </Card>
       )}
 
-      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
+      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} onUpgrade={onUpgrade} />
     </div>
   );
 };

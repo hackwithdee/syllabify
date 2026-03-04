@@ -2,22 +2,14 @@ import { useState, useEffect } from 'react';
 import { NavLink } from '@/components/NavLink';
 import { BookOpen, LayoutDashboard, Route, Library, CalendarDays, User, LogOut, Sparkles, Map, Users, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { getNotifications, markAllNotificationsRead } from '@/lib/storage';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import PremiumBadge from '@/components/PremiumBadge';
 import UpgradeCard from '@/components/UpgradeCard';
 import UpgradeDialog from '@/components/UpgradeDialog';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
 interface AppLayoutProps {
@@ -26,6 +18,7 @@ interface AppLayoutProps {
   userName: string;
   userId: string;
   isPremium?: boolean;
+  onUpgrade?: () => Promise<void>;
 }
 
 const navItems = [
@@ -47,7 +40,7 @@ const mobileNavItems = [
   { to: '/friends', icon: Users, label: 'Friends' },
 ];
 
-const AppLayout = ({ children, onLogout, userName, userId, isPremium }: AppLayoutProps) => {
+const AppLayout = ({ children, onLogout, userName, userId, isPremium, onUpgrade }: AppLayoutProps) => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotif, setShowNotif] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -67,7 +60,6 @@ const AppLayout = ({ children, onLogout, userName, userId, isPremium }: AppLayou
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top nav */}
       <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur-md shadow-sm">
         <div className="container flex h-14 items-center justify-between">
           <div className="flex items-center gap-2">
@@ -79,9 +71,7 @@ const AppLayout = ({ children, onLogout, userName, userId, isPremium }: AppLayou
           </div>
           <nav className="hidden lg:flex items-center gap-0.5">
             {navItems.map(item => (
-              <NavLink
-                key={item.to}
-                to={item.to}
+              <NavLink key={item.to} to={item.to}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
                 activeClassName="text-primary bg-primary/10 font-semibold"
               >
@@ -93,7 +83,6 @@ const AppLayout = ({ children, onLogout, userName, userId, isPremium }: AppLayou
           <div className="flex items-center gap-2">
             {!isPremium && <UpgradeCard compact onUpgrade={() => setShowUpgrade(true)} />}
 
-            {/* Notifications */}
             <Popover open={showNotif} onOpenChange={setShowNotif}>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative text-muted-foreground">
@@ -134,7 +123,6 @@ const AppLayout = ({ children, onLogout, userName, userId, isPremium }: AppLayou
               <span className="text-sm font-medium text-foreground">{userName.split(' ')[0]}</span>
             </div>
 
-            {/* Sign out with confirmation dialog */}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="icon" title="Sign out" className="text-muted-foreground hover:text-destructive">
@@ -144,15 +132,11 @@ const AppLayout = ({ children, onLogout, userName, userId, isPremium }: AppLayou
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle className="font-display">Sign out?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to sign out of Syllabify? Your progress is saved.
-                  </AlertDialogDescription>
+                  <AlertDialogDescription>Are you sure you want to sign out of Syllabify? Your progress is saved.</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={onLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Sign Out
-                  </AlertDialogAction>
+                  <AlertDialogAction onClick={onLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Sign Out</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -160,13 +144,10 @@ const AppLayout = ({ children, onLogout, userName, userId, isPremium }: AppLayou
         </div>
       </header>
 
-      {/* Mobile bottom nav */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 backdrop-blur-md shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
         <div className="flex justify-around py-1 px-1">
           {mobileNavItems.map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
+            <NavLink key={item.to} to={item.to}
               className="flex flex-col items-center gap-0.5 px-1 py-1.5 text-[10px] text-muted-foreground transition-all duration-200 rounded-lg"
               activeClassName="text-primary font-semibold"
             >
@@ -181,7 +162,7 @@ const AppLayout = ({ children, onLogout, userName, userId, isPremium }: AppLayou
         {children}
       </main>
 
-      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
+      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} onUpgrade={onUpgrade} />
     </div>
   );
 };
