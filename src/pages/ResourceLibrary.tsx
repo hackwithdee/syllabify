@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { LearningResource, ResourceType } from '@/lib/types';
 import { getResources, addResource, deleteResource, toggleResourceComplete } from '@/lib/storage';
-import { Plus, Trash2, ExternalLink, CheckCircle2, Circle, Search, Lock } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, CheckCircle2, Circle, Search, Lock, Crown } from 'lucide-react';
 import UpgradeDialog from '@/components/UpgradeDialog';
 import { useToast } from '@/hooks/use-toast';
 
@@ -18,6 +18,7 @@ interface ResourceLibraryProps {
   resourcesLeft: number;
   onResourceAdded: () => Promise<void>;
   onResourceDeleted: () => Promise<void>;
+  onUpgrade?: () => Promise<void>;
 }
 
 const typeLabels: Record<ResourceType, string> = {
@@ -31,7 +32,7 @@ const difficultyColors: Record<string, string> = {
   Advanced: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
-const ResourceLibrary = ({ userId, isPremium, canAddResource, resourcesLeft, onResourceAdded, onResourceDeleted }: ResourceLibraryProps) => {
+const ResourceLibrary = ({ userId, isPremium, canAddResource, resourcesLeft, onResourceAdded, onResourceDeleted, onUpgrade }: ResourceLibraryProps) => {
   const { toast } = useToast();
   const [resources, setResources] = useState<LearningResource[]>([]);
   const [title, setTitle] = useState('');
@@ -98,11 +99,11 @@ const ResourceLibrary = ({ userId, isPremium, canAddResource, resourcesLeft, onR
           <p className="text-muted-foreground mt-1">
             {resources.length} resources
             {!isPremium && <span className="text-xs ml-2">· {resourcesLeft === Infinity ? '∞' : resourcesLeft} left on free plan</span>}
+            {isPremium && <span className="text-xs ml-2 text-amber-600">· ∞ Unlimited</span>}
           </p>
         </div>
         <Button onClick={handleShowAdd} className="gradient-primary border-0 w-full sm:w-auto">
-          {!canAddResource ? <Lock className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
-          Add Resource
+          {!canAddResource ? <><Crown className="h-4 w-4 mr-1 text-amber-300" /> Upgrade to Add</> : <><Plus className="h-4 w-4 mr-1" /> Add Resource</>}
         </Button>
       </div>
 
@@ -110,20 +111,13 @@ const ResourceLibrary = ({ userId, isPremium, canAddResource, resourcesLeft, onR
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search by title, type, difficulty..."
-            className="pl-9 h-11"
-          />
+          <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search by title, type, difficulty..." className="pl-9 h-11" />
         </div>
         <Select value={filterType} onValueChange={setFilterType}>
           <SelectTrigger className="w-full sm:w-36 h-11"><SelectValue placeholder="All types" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All types</SelectItem>
-            {Object.entries(typeLabels).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
+            {Object.entries(typeLabels).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}
           </SelectContent>
         </Select>
         <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
@@ -155,9 +149,7 @@ const ResourceLibrary = ({ userId, isPremium, canAddResource, resourcesLeft, onR
                 <Select value={type} onValueChange={v => setType(v as ResourceType)}>
                   <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {Object.entries(typeLabels).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
-                    ))}
+                    {Object.entries(typeLabels).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}
                   </SelectContent>
                 </Select>
               </div>
@@ -206,7 +198,7 @@ const ResourceLibrary = ({ userId, isPremium, canAddResource, resourcesLeft, onR
         </div>
       )}
 
-      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
+      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} onUpgrade={onUpgrade} />
     </div>
   );
 };

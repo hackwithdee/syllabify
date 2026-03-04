@@ -5,7 +5,6 @@ import { Profile, LearningResource, StudySession, RoadmapStage } from '@/lib/typ
 import { getResources, getSessions, getProgress, getStreak, getWeeklyMinutes, getConsistencyScore, getRoadmapStages } from '@/lib/storage';
 import { getDailyQuote } from '@/lib/quotes';
 import { Flame, Target, BookOpen, CheckCircle2, Quote, Clock, BarChart3, TrendingUp, Map, Lock } from 'lucide-react';
-import PremiumBadge from '@/components/PremiumBadge';
 import UpgradeCard from '@/components/UpgradeCard';
 import UpgradeDialog from '@/components/UpgradeDialog';
 
@@ -13,9 +12,10 @@ interface DashboardProps {
   userId: string;
   profile: Profile;
   isPremium?: boolean;
+  onUpgrade?: () => Promise<void>;
 }
 
-const Dashboard = ({ userId, profile, isPremium }: DashboardProps) => {
+const Dashboard = ({ userId, profile, isPremium, onUpgrade }: DashboardProps) => {
   const [resources, setResources] = useState<LearningResource[]>([]);
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [roadmapStages, setRoadmapStages] = useState<RoadmapStage[]>([]);
@@ -62,7 +62,6 @@ const Dashboard = ({ userId, profile, isPremium }: DashboardProps) => {
         )}
       </div>
 
-      {/* Motivational Quote */}
       <Card className="border-0 gradient-hero text-primary-foreground overflow-hidden">
         <CardContent className="py-6">
           <div className="flex gap-3 items-start">
@@ -75,10 +74,11 @@ const Dashboard = ({ userId, profile, isPremium }: DashboardProps) => {
         </CardContent>
       </Card>
 
-      {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {stats.map((stat, i) => (
-          <Card key={i} className={`overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-200 ${stat.premium && !isPremium ? 'relative' : ''}`}>
+          <Card key={i} className={`overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-200 ${stat.premium && !isPremium ? 'relative cursor-pointer' : ''}`}
+            onClick={stat.premium && !isPremium ? () => setShowUpgrade(true) : undefined}
+          >
             <CardContent className="pt-4 pb-3.5">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-xl ${stat.gradient || stat.color}`}>
@@ -89,7 +89,7 @@ const Dashboard = ({ userId, profile, isPremium }: DashboardProps) => {
                     <>
                       <div className="flex items-center gap-1">
                         <Lock className="h-3.5 w-3.5 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">PRO</p>
+                        <p className="text-xs text-amber-600 font-semibold">PRO</p>
                       </div>
                       <p className="text-[11px] text-muted-foreground">{stat.label}</p>
                     </>
@@ -106,7 +106,6 @@ const Dashboard = ({ userId, profile, isPremium }: DashboardProps) => {
         ))}
       </div>
 
-      {/* Overall Progress */}
       <Card className="border-0 shadow-md">
         <CardHeader>
           <CardTitle className="text-lg font-display">Overall Progress</CardTitle>
@@ -119,7 +118,6 @@ const Dashboard = ({ userId, profile, isPremium }: DashboardProps) => {
         </CardContent>
       </Card>
 
-      {/* Upgrade card for free users */}
       {!isPremium && (
         <UpgradeCard onUpgrade={() => setShowUpgrade(true)} />
       )}
@@ -136,7 +134,7 @@ const Dashboard = ({ userId, profile, isPremium }: DashboardProps) => {
         </Card>
       )}
 
-      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
+      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} onUpgrade={onUpgrade} />
     </div>
   );
 };

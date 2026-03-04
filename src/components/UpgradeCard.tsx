@@ -1,6 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Crown, Zap, BarChart3, Shield, Sparkles } from 'lucide-react';
+import { PRICING } from '@/hooks/useSubscription';
 
 interface UpgradeCardProps {
   onUpgrade?: () => void;
@@ -37,7 +38,7 @@ const UpgradeCard = ({ onUpgrade, compact }: UpgradeCardProps) => {
           </div>
           <div>
             <h3 className="font-display font-bold text-lg">Go Premium</h3>
-            <p className="text-xs text-muted-foreground">Unlock the full Syllabify experience</p>
+            <p className="text-xs text-muted-foreground">From {PRICING.currency}{PRICING.monthly.toLocaleString()}/month</p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2 mb-4">
