@@ -18,7 +18,7 @@ import RoadmapPage from './pages/RoadmapPage';
 import FriendsPage from './pages/FriendsPage';
 import AppLayout from './components/AppLayout';
 import NotFound from "./pages/NotFound";
-import { BookOpen } from 'lucide-react';
+import logo from '@/assets/syllabify-logo.png';
 
 const queryClient = new QueryClient();
 
@@ -30,9 +30,7 @@ const AppContent = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
-          <div className="p-3 rounded-xl gradient-primary">
-            <BookOpen className="h-8 w-8 text-primary-foreground animate-pulse" />
-          </div>
+          <img src={logo} alt="Syllabify" className="h-16 w-auto object-contain animate-pulse" />
           <p className="text-muted-foreground font-medium font-display">Loading Syllabify...</p>
         </div>
       </div>

@@ -7,6 +7,9 @@ import { getDailyQuote } from '@/lib/quotes';
 import { Flame, Target, BookOpen, CheckCircle2, Quote, Clock, BarChart3, TrendingUp, Map, Lock } from 'lucide-react';
 import UpgradeCard from '@/components/UpgradeCard';
 import UpgradeDialog from '@/components/UpgradeDialog';
+import StudyHeatmap from '@/components/StudyHeatmap';
+import SkillReadinessMeter from '@/components/SkillReadinessMeter';
+import logo from '@/assets/syllabify-logo.png';
 
 interface DashboardProps {
   userId: string;
@@ -51,15 +54,18 @@ const Dashboard = ({ userId, profile, isPremium, onUpgrade }: DashboardProps) =>
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold font-display">
-          Welcome back{profile.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''} 👋
-        </h1>
-        {profile.learning_goal && (
-          <p className="text-muted-foreground mt-1 text-lg">
-            🎯 <span className="font-medium text-foreground">{profile.learning_goal}</span>
-          </p>
-        )}
+      <div className="flex items-center gap-3">
+        <img src={logo} alt="Syllabify" className="h-10 w-auto object-contain hidden sm:block" />
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold font-display">
+            Welcome back{profile.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''} 👋
+          </h1>
+          {profile.learning_goal && (
+            <p className="text-muted-foreground mt-1 text-lg">
+              🎯 <span className="font-medium text-foreground">{profile.learning_goal}</span>
+            </p>
+          )}
+        </div>
       </div>
 
       <Card className="border-0 gradient-hero text-primary-foreground overflow-hidden">
@@ -77,8 +83,7 @@ const Dashboard = ({ userId, profile, isPremium, onUpgrade }: DashboardProps) =>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {stats.map((stat, i) => (
           <Card key={i} className={`overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-200 ${stat.premium && !isPremium ? 'relative cursor-pointer' : ''}`}
-            onClick={stat.premium && !isPremium ? () => setShowUpgrade(true) : undefined}
-          >
+            onClick={stat.premium && !isPremium ? () => setShowUpgrade(true) : undefined}>
             <CardContent className="pt-4 pb-3.5">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-xl ${stat.gradient || stat.color}`}>
@@ -106,6 +111,12 @@ const Dashboard = ({ userId, profile, isPremium, onUpgrade }: DashboardProps) =>
         ))}
       </div>
 
+      {/* Skill Readiness Meter */}
+      <SkillReadinessMeter stages={roadmapStages} learningGoal={profile.learning_goal} />
+
+      {/* Study Heatmap */}
+      <StudyHeatmap sessions={sessions} />
+
       <Card className="border-0 shadow-md">
         <CardHeader>
           <CardTitle className="text-lg font-display">Overall Progress</CardTitle>
@@ -118,9 +129,7 @@ const Dashboard = ({ userId, profile, isPremium, onUpgrade }: DashboardProps) =>
         </CardContent>
       </Card>
 
-      {!isPremium && (
-        <UpgradeCard onUpgrade={() => setShowUpgrade(true)} />
-      )}
+      {!isPremium && <UpgradeCard onUpgrade={() => setShowUpgrade(true)} />}
 
       {resources.length === 0 && (
         <Card className="border-dashed border-2">
