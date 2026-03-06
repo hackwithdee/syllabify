@@ -40,7 +40,7 @@ export interface RoadmapStage {
   user_id: string;
   title: string;
   description: string;
-  phase: 'foundation' | 'intermediate' | 'advanced' | 'certification';
+  phase: 'foundation' | 'core' | 'intermediate' | 'advanced' | 'certification';
   stage_order: number;
   completed: boolean;
   completed_at?: string | null;
