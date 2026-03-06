@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from '@/components/NavLink';
-import { BookOpen, LayoutDashboard, Route, Library, CalendarDays, User, LogOut, Sparkles, Map, Users, Bell } from 'lucide-react';
+import { LayoutDashboard, Route, Library, CalendarDays, User, LogOut, Sparkles, Map, Users, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getNotifications, markAllNotificationsRead } from '@/lib/storage';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -11,6 +11,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import logo from '@/assets/syllabify-logo.png';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -63,18 +64,14 @@ const AppLayout = ({ children, onLogout, userName, userId, isPremium, onUpgrade 
       <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur-md shadow-sm">
         <div className="container flex h-14 items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-xl gradient-primary">
-              <BookOpen className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-bold font-display text-foreground">Syllabify</span>
+            <img src={logo} alt="Syllabify" className="h-8 w-auto object-contain" />
             {isPremium && <PremiumBadge className="hidden sm:inline-flex" />}
           </div>
           <nav className="hidden lg:flex items-center gap-0.5">
             {navItems.map(item => (
               <NavLink key={item.to} to={item.to}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
-                activeClassName="text-primary bg-primary/10 font-semibold"
-              >
+                activeClassName="text-primary bg-primary/10 font-semibold">
                 <item.icon className="h-4 w-4" />
                 {item.label}
               </NavLink>
@@ -149,8 +146,7 @@ const AppLayout = ({ children, onLogout, userName, userId, isPremium, onUpgrade 
           {mobileNavItems.map(item => (
             <NavLink key={item.to} to={item.to}
               className="flex flex-col items-center gap-0.5 px-1 py-1.5 text-[10px] text-muted-foreground transition-all duration-200 rounded-lg"
-              activeClassName="text-primary font-semibold"
-            >
+              activeClassName="text-primary font-semibold">
               <item.icon className="h-5 w-5" />
               <span>{item.label}</span>
             </NavLink>

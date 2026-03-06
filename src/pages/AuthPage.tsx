@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { BookOpen, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import logo from '@/assets/syllabify-logo.png';
 
 interface AuthPageProps {
   onAuth: (action: 'login' | 'register', data: { name?: string; email: string; password: string }) => Promise<void>;
@@ -58,12 +59,7 @@ const AuthPage = ({ onAuth }: AuthPageProps) => {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2.5 mb-3">
-            <div className="p-2 rounded-xl gradient-primary">
-              <BookOpen className="h-7 w-7 text-primary-foreground" />
-            </div>
-            <h1 className="text-3xl font-bold font-display text-foreground">Syllabify</h1>
-          </div>
+          <img src={logo} alt="Syllabify" className="h-20 sm:h-24 mx-auto mb-3 object-contain" />
           <p className="text-muted-foreground text-lg">Your smart learning companion</p>
         </div>
 

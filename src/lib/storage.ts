@@ -4,20 +4,71 @@ import type { LearningResource, StudySession, RoadmapStage, Friendship, ChatMess
 export function assignDifficulty(type: LearningResource['type'], url: string, title?: string): LearningResource['difficulty'] {
   const combined = `${url} ${title || ''}`.toLowerCase();
 
-  // Keyword-based classification (check title + url)
-  const advancedKeywords = ['advanced', 'expert', 'mastery', 'deep dive', 'architecture', 'system design', 'optimization', 'performance'];
-  const intermediateKeywords = ['intermediate', 'mid-level', 'practical', 'hands-on', 'project', 'building', 'real-world'];
-  const beginnerKeywords = ['beginner', 'intro', 'getting started', 'basics', 'fundamentals', 'first steps', '101', 'for beginners'];
+  // Advanced keywords
+  const advancedKeywords = [
+    'advanced', 'expert', 'mastery', 'deep dive', 'architecture', 'system design',
+    'optimization', 'performance', 'distributed', 'scalability', 'concurrency',
+    'microservices', 'design patterns', 'machine learning', 'neural network',
+    'compiler', 'kernel', 'low-level', 'reverse engineering', 'penetration testing',
+    'thesis', 'research paper', 'phd', 'graduate-level',
+  ];
 
-  if (beginnerKeywords.some(k => combined.includes(k))) return 'Beginner';
-  if (advancedKeywords.some(k => combined.includes(k))) return 'Advanced';
-  if (intermediateKeywords.some(k => combined.includes(k))) return 'Intermediate';
+  // Intermediate keywords
+  const intermediateKeywords = [
+    'intermediate', 'mid-level', 'practical', 'hands-on', 'project', 'building',
+    'real-world', 'application', 'framework', 'api', 'database', 'deployment',
+    'testing', 'debugging', 'refactoring', 'data structures', 'algorithms',
+    'full-stack', 'backend', 'frontend', 'devops', 'cloud', 'docker', 'kubernetes',
+    'react', 'angular', 'vue', 'django', 'flask', 'spring', 'express',
+    'certification', 'professional', 'workshop',
+  ];
+
+  // Beginner keywords
+  const beginnerKeywords = [
+    'beginner', 'intro', 'introduction', 'getting started', 'basics', 'fundamentals',
+    'first steps', '101', 'for beginners', 'starter', 'learn', 'tutorial',
+    'what is', 'overview', 'crash course', 'quick start', 'hello world',
+    'absolute beginner', 'from scratch', 'from zero', 'newbie', 'primer',
+    'simple', 'easy', 'basic', 'foundation',
+  ];
+
+  // Domain-based classification from URL
+  const domainHints: Record<string, LearningResource['difficulty']> = {
+    'w3schools.com': 'Beginner',
+    'freecodecamp.org': 'Beginner',
+    'codecademy.com': 'Beginner',
+    'khanacademy.org': 'Beginner',
+    'grasshopper.app': 'Beginner',
+    'sololearn.com': 'Beginner',
+    'arxiv.org': 'Advanced',
+    'research.google': 'Advanced',
+    'proceedings.neurips.cc': 'Advanced',
+    'coursera.org': 'Intermediate',
+    'udemy.com': 'Intermediate',
+    'pluralsight.com': 'Intermediate',
+    'educative.io': 'Intermediate',
+    'leetcode.com': 'Intermediate',
+    'hackerrank.com': 'Intermediate',
+  };
+
+  // Check domain hints first
+  for (const [domain, difficulty] of Object.entries(domainHints)) {
+    if (url.toLowerCase().includes(domain)) return difficulty;
+  }
+
+  // Keyword scoring - count matches for each level
+  let advScore = advancedKeywords.filter(k => combined.includes(k)).length;
+  let intScore = intermediateKeywords.filter(k => combined.includes(k)).length;
+  let begScore = beginnerKeywords.filter(k => combined.includes(k)).length;
+
+  // Return level with highest score
+  if (advScore > 0 && advScore >= intScore && advScore >= begScore) return 'Advanced';
+  if (begScore > 0 && begScore >= intScore) return 'Beginner';
+  if (intScore > 0) return 'Intermediate';
 
   // Type-based fallback
   if (type === 'course' || type === 'book') return 'Intermediate';
   if (type === 'tutorial') return 'Beginner';
-  if (type === 'article' || type === 'podcast') return 'Beginner';
-  if (type === 'video') return 'Beginner';
   return 'Beginner';
 }
 
@@ -280,7 +331,6 @@ export function getWeeklyMinutes(sessions: StudySession[]): number {
 }
 
 export function getConsistencyScore(sessions: StudySession[]): number {
-  // Score based on how many of the last 7 days had study sessions
   const now = new Date();
   const days = new Set<string>();
   for (let i = 0; i < 7; i++) {
