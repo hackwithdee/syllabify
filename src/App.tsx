@@ -15,6 +15,7 @@ import StudyPlanner from './pages/StudyPlanner';
 import UserProfile from './pages/UserProfile';
 import ExplorePage from './pages/ExplorePage';
 import RoadmapPage from './pages/RoadmapPage';
+import SkillPortfolio from './pages/SkillPortfolio';
 import FriendsPage from './pages/FriendsPage';
 import AppLayout from './components/AppLayout';
 import NotFound from "./pages/NotFound";
