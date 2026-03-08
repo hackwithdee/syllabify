@@ -9,16 +9,65 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { goal } = await req.json();
+    const body = await req.json();
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Portfolio summary generation
+    if (body.type === 'portfolio-summary') {
+      const { goal, completedTopics, totalHours, userName } = body;
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            {
+              role: "system",
+              content: "You are a professional portfolio writer. Write a concise, professional 2-3 sentence summary of a learner's journey. Make it sound impressive and suitable for a resume or LinkedIn profile.",
+            },
+            {
+              role: "user",
+              content: `Write a learning portfolio summary for ${userName} who completed a ${goal} learning path. They completed these topics: ${completedTopics}. Total study time: ${totalHours} hours.`,
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "Rate limited" }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ error: "Payment required" }), {
+            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        throw new Error("AI gateway error");
+      }
+
+      const data = await response.json();
+      const summary = data.choices?.[0]?.message?.content || '';
+
+      return new Response(JSON.stringify({ summary }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Default: resource suggestions
+    const { goal } = body;
     if (!goal) {
       return new Response(JSON.stringify({ error: "Goal is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -31,7 +80,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a learning advisor. Given a user's learning goal, suggest 5-8 specific, real learning resources (articles, tutorials, courses, videos) they should study. Each resource must have a real URL to an actual website. Focus on free, high-quality resources.`,
+            content: "You are a learning advisor. Given a user's learning goal, suggest 5-8 specific, real learning resources. Each resource must have a real URL. Focus on free, high-quality resources.",
           },
           {
             role: "user",
@@ -74,15 +123,13 @@ serve(async (req) => {
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limited, try again later." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        return new Response(JSON.stringify({ error: "Rate limited" }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        return new Response(JSON.stringify({ error: "Payment required" }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const t = await response.text();
