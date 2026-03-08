@@ -30,6 +30,7 @@ const navItems = [
   { to: '/resources', icon: Library, label: 'Resources' },
   { to: '/planner', icon: CalendarDays, label: 'Planner' },
   { to: '/friends', icon: Users, label: 'Friends' },
+  { to: '/portfolio', icon: Award, label: 'Portfolio' },
   { to: '/profile', icon: User, label: 'Profile' },
 ];
 

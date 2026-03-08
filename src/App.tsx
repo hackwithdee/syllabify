@@ -89,6 +89,14 @@ const AppContent = () => {
             />
           } />
           <Route path="/learning-path" element={<LearningPath userId={user.id} />} />
+          <Route path="/portfolio" element={
+            <SkillPortfolio
+              userId={user.id}
+              learningGoal={profile.learning_goal}
+              userName={profile.full_name}
+              isPremium={sub.isPremium}
+            />
+          } />
           <Route path="/explore" element={
             <ExplorePage
               userId={user.id}
