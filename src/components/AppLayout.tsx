@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from '@/components/NavLink';
-import { LayoutDashboard, Route, Library, CalendarDays, User, LogOut, Sparkles, Map, Users, Bell } from 'lucide-react';
+import { LayoutDashboard, Route, Library, CalendarDays, User, LogOut, Sparkles, Map, Users, Bell, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getNotifications, markAllNotificationsRead } from '@/lib/storage';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -30,6 +30,7 @@ const navItems = [
   { to: '/resources', icon: Library, label: 'Resources' },
   { to: '/planner', icon: CalendarDays, label: 'Planner' },
   { to: '/friends', icon: Users, label: 'Friends' },
+  { to: '/portfolio', icon: Award, label: 'Portfolio' },
   { to: '/profile', icon: User, label: 'Profile' },
 ];
 

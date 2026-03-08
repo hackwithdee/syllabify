@@ -15,6 +15,7 @@ import StudyPlanner from './pages/StudyPlanner';
 import UserProfile from './pages/UserProfile';
 import ExplorePage from './pages/ExplorePage';
 import RoadmapPage from './pages/RoadmapPage';
+import SkillPortfolio from './pages/SkillPortfolio';
 import FriendsPage from './pages/FriendsPage';
 import AppLayout from './components/AppLayout';
 import NotFound from "./pages/NotFound";
@@ -88,6 +89,14 @@ const AppContent = () => {
             />
           } />
           <Route path="/learning-path" element={<LearningPath userId={user.id} />} />
+          <Route path="/portfolio" element={
+            <SkillPortfolio
+              userId={user.id}
+              learningGoal={profile.learning_goal}
+              userName={profile.full_name}
+              isPremium={sub.isPremium}
+            />
+          } />
           <Route path="/explore" element={
             <ExplorePage
               userId={user.id}
