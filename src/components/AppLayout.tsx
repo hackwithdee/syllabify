@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from '@/components/NavLink';
-import { LayoutDashboard, Route, Library, CalendarDays, User, LogOut, Sparkles, Map, Users, Bell } from 'lucide-react';
+import { LayoutDashboard, Route, Library, CalendarDays, User, LogOut, Sparkles, Map, Users, Bell, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getNotifications, markAllNotificationsRead } from '@/lib/storage';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
